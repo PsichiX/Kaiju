@@ -1,0 +1,12 @@
+Thumbs.db
+obj/
+bin/
+*.o
+*.cscope_file_list
+*.depend
+*.layout
+*.a
+SDK/
+test/*.ast
+test/*.isc
+test/*.itc
