@@ -7,6 +7,10 @@
 #include <iostream>
 #include <pegtl/analyze.hh>
 
+#define ISC_STACK_SIZE      (8 * 1024)
+#define ISC_REGISTERS_I     (8)
+#define ISC_REGISTERS_F     (8)
+
 namespace Kaiju
 {
     namespace Compiler
@@ -24,7 +28,9 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::Number::hex_literal, "number.hex_literal", false );
             REGISTER_TYPE( Kaiju::Grammar::number, "number", true );
             REGISTER_TYPE( Kaiju::Grammar::string, "string", false );
+            REGISTER_TYPE( Kaiju::Grammar::null_value, "null_value", false );
             REGISTER_TYPE( Kaiju::Grammar::field, "field", true );
+            REGISTER_TYPE( Kaiju::Grammar::access_value, "access_value", true );
             REGISTER_TYPE( Kaiju::Grammar::value, "value", true );
             REGISTER_TYPE( Kaiju::Grammar::Variable::declaration, "variable.declaration", true );
             REGISTER_TYPE( Kaiju::Grammar::Variable::assignment_expression, "variable.assignment_expression", true );
@@ -61,7 +67,8 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::foreach_stage, "control_flow.foreach_stage", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::foreach_statement, "control_flow.foreach_statement", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::while_statement, "control_flow.while_statement", true );
-            REGISTER_TYPE( Kaiju::Grammar::statement, "statement", true );
+            REGISTER_TYPE( Kaiju::Grammar::statement_inner, "statement_inner", true );
+            REGISTER_TYPE( Kaiju::Grammar::statement_outter, "statement_outter", true );
             ASTGenerator::getInstance()->acquire( &output, input.data() );
             try
             {

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <time.h>
 #include <compiler.h>
+#include <program.h>
 
 enum Mode
 {
@@ -172,11 +173,13 @@ int main( int argc, char** argv )
                     dt = stop - start;
                     dtms = ( dt * 1000.0 ) / CLOCKS_PER_SEC;
                     dts = dtms * 0.001;
+                    start = stop;
                     if( !silent )
                     {
                         std::cout << "Done! Time consumed by processing: " << (int)dtms << "ms (" << dts << "s)" << std::endl;
-                        std::cout << "Processing AST..." << std::endl;
+                        std::cout << "Processing ISC..." << std::endl;
                     }
+                    Kaiju::Compiler::Program program( &ast );
                     stop = clock();
                     dt = stop - start;
                     dtms = ( dt * 1000.0 ) / CLOCKS_PER_SEC;
@@ -184,7 +187,22 @@ int main( int argc, char** argv )
                     if( !silent )
                         std::cout << "Done! Time consumed by processing: " << (int)dtms << "ms (" << dts << "s)" << std::endl;
                     ast.clear();
-                    // TODO: process AST to ISC.
+                    if( !program.isValid )
+                    {
+                        outputFile.close();
+                        std::cout << "Invalid AST tree!" << std::endl;
+                        if( program.hasErrors() )
+                            std::cout << "Errors:" << std::endl << std::endl << program.getErrors();
+                        if( pauseOnExit ) std::getchar();
+                        return EXIT_FAILURE;
+                    }
+                    start = clock();
+                    if( outputFormat == F_ISC )
+                    {
+                        if( !silent )
+                            std::cout << "Producing ISC..." << std::endl;
+                        program.convertToISC( outputContent );
+                    }
                 }
                 else
                 {

@@ -31,7 +31,9 @@ namespace Kaiju
             AST_GENERATOR_ACTION( Kaiju::Grammar::Number::hex_literal );
             AST_GENERATOR_ACTION( Kaiju::Grammar::number );
             AST_GENERATOR_ACTION( Kaiju::Grammar::string );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::null_value );
             AST_GENERATOR_ACTION( Kaiju::Grammar::field );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::access_value );
             AST_GENERATOR_ACTION( Kaiju::Grammar::value );
             AST_GENERATOR_ACTION( Kaiju::Grammar::Variable::declaration );
             AST_GENERATOR_ACTION( Kaiju::Grammar::Variable::assignment_expression );
@@ -68,7 +70,8 @@ namespace Kaiju
             AST_GENERATOR_ACTION( Kaiju::Grammar::ControlFlow::foreach_stage );
             AST_GENERATOR_ACTION( Kaiju::Grammar::ControlFlow::foreach_statement );
             AST_GENERATOR_ACTION( Kaiju::Grammar::ControlFlow::while_statement );
-            AST_GENERATOR_ACTION( Kaiju::Grammar::statement );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::statement_inner );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::statement_outter );
 
         }
     }

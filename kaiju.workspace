@@ -2,5 +2,6 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="Kaiju Workspace">
 		<Project filename="KaijuCompiler/KaijuCompiler.cbp" />
+		<Project filename="KaijuCompilerCommandLine/KaijuCompilerCommandLine.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>
