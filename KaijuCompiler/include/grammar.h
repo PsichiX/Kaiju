@@ -58,9 +58,8 @@ namespace Kaiju
             struct prefix_static : pegtl::string< '~', '$' > {};
             struct assignment;
             struct declaration : pegtl::seq< pegtl::sor< prefix, prefix_static >, whitespaces_any, identifier > {};
-            struct assignment_expression : pegtl::sor< assignment, value > {};
-            struct declaration_assignment : pegtl::seq< declaration, whitespaces_any, pegtl::one< '=' >, whitespaces_any, assignment_expression > {};
-            struct assignment : pegtl::seq< value, whitespaces_any, pegtl::one< '=' >, whitespaces_any, assignment_expression > {};
+            struct declaration_assignment : pegtl::seq< declaration, whitespaces_any, pegtl::one< '=' >, whitespaces_any, value > {};
+            struct assignment : pegtl::seq< value, whitespaces_any, pegtl::one< '=' >, whitespaces_any, value > {};
         }
         struct variable : pegtl::sor< Variable::declaration_assignment, Variable::declaration, Variable::assignment > {};
         struct variable_statement : pegtl::seq< variable, whitespaces_any, semicolons > {};
@@ -86,7 +85,7 @@ namespace Kaiju
                 struct call_statement : pegtl::seq< call, whitespaces_any, semicolons > {};
             }
             struct prefix : pegtl::one< '#' > {};
-            struct inheritance : pegtl::seq< pegtl::one< ':' >, whitespaces_any, field > {};
+            struct inheritance : pegtl::seq< pegtl::one< ':' >, whitespaces_any, identifier > {};
             struct body : pegtl::seq< pegtl::one< '{' >, whitespaces_any, pegtl::star< pegtl::sor< variable_statement, Method::definition_statement >, whitespaces_any >, pegtl::one< '}' > > {};
             struct definition_statement : pegtl::seq< prefix, whitespaces_any, identifier, whitespaces_any, inheritance, whitespaces_any, body > {};
         }
