@@ -7,7 +7,7 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="[Win] Debug">
-				<Option output="bin/Win/Debug/KaijuCompiler" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Win/Debug/KaijuCompiler-d" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output="obj/Win/Debug/" />
 				<Option type="2" />

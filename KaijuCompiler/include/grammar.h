@@ -9,8 +9,9 @@ namespace Kaiju
     namespace Grammar
     {
 
+        struct value;
+        struct statement;
         struct statements;
-        struct expression;
         namespace Class
         {
             namespace Method
@@ -28,10 +29,8 @@ namespace Kaiju
         struct whitespaces_any : pegtl::star< pegtl::sor< pegtl::space, comment > > {};
         struct semicolons : pegtl::seq< pegtl::one< ';' >, pegtl::star< whitespaces_any, pegtl::one< ';' > > > {};
         struct identifier : pegtl::identifier {};
-        struct new_keyword : pegtl::string< 'n', 'e', 'w' > {};
-        struct delete_keyword : pegtl::string< 'd', 'e', 'l', 'e', 't', 'e' > {};
-        struct object_create : pegtl::seq< new_keyword, whitespaces, Class::Method::call > {};
-        struct object_destroy_statement : pegtl::seq< delete_keyword, whitespaces, expression, whitespaces_any, semicolons > {};
+        struct object_create : pegtl::seq< pegtl::one< '+' >, whitespaces_any, Class::Method::call > {};
+        struct object_destroy_statement : pegtl::seq< pegtl::one< '-' >, whitespaces, value, whitespaces_any, semicolons > {};
         namespace Number
         {
             struct integer_literal : pegtl::seq< pegtl::opt< pegtl::one< '+', '-' > >, pegtl::plus< pegtl::digit > > {};
@@ -57,7 +56,7 @@ namespace Kaiju
             struct prefix_static : pegtl::string< '~', '$' > {};
             struct assignment;
             struct declaration : pegtl::seq< pegtl::sor< prefix, prefix_static >, whitespaces_any, identifier > {};
-            struct assignment_expression : pegtl::sor< assignment, expression > {};
+            struct assignment_expression : pegtl::sor< assignment, value > {};
             struct declaration_assignment : pegtl::seq< declaration, whitespaces_any, pegtl::one< '=' >, whitespaces_any, assignment_expression > {};
             struct assignment : pegtl::seq< field, whitespaces_any, pegtl::one< '=' >, whitespaces_any, assignment_expression > {};
         }
@@ -78,7 +77,7 @@ namespace Kaiju
                 struct definition_statement : pegtl::seq< pegtl::sor< prefix, prefix_static>, whitespaces_any, identifier, whitespaces_any, Definition::arguments, whitespaces_any, block > {};
                 namespace Call
                 {
-                    struct argument_list : pegtl::opt< expression, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, expression > > {};
+                    struct argument_list : pegtl::opt< value, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, value > > {};
                     struct arguments : pegtl::seq< pegtl::one< '(' >, whitespaces_any, argument_list, whitespaces_any, pegtl::one< ')' > > {};
                 }
                 struct call : pegtl::seq< field, whitespaces_any, Call::arguments > {};
@@ -87,13 +86,43 @@ namespace Kaiju
             struct prefix : pegtl::one< '#' > {};
             struct inheritance : pegtl::seq< whitespaces_any, pegtl::one< ':' >, whitespaces_any, field, whitespaces_any > {};
             struct body : pegtl::seq< pegtl::one< '{' >, whitespaces_any, pegtl::star< pegtl::sor< variable_statement, Method::definition_statement >, whitespaces_any >, pegtl::one< '}' > > {};
-            struct definition_statement : pegtl::seq< prefix, whitespaces, identifier, whitespaces_any, inheritance, whitespaces_any, body > {};
+            struct definition_statement : pegtl::seq< prefix, whitespaces_any, identifier, whitespaces_any, inheritance, whitespaces_any, body > {};
         }
-        struct expression_bracket : pegtl::seq< pegtl::one< '(' >, whitespaces_any, expression, whitespaces_any, pegtl::one< ')' > > {};
-        struct expression_atomic : pegtl::sor< expression_bracket, value > {};
-        struct expression : pegtl::seq< expression_atomic > {};
-        struct expression_statement : pegtl::seq< expression, whitespaces_any, semicolons > {};
-        struct statement : pegtl::sor< comment, block, variable_statement, Class::Method::call_statement, Class::definition_statement, expression_statement > {};
+        namespace Directive
+        {
+            struct prefix : pegtl::one< '%' > {};
+            struct argument_list : pegtl::opt< value, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, value > > {};
+            struct arguments : pegtl::seq< pegtl::one< '(' >, whitespaces_any, argument_list, whitespaces_any, pegtl::one< ')' > > {};
+            struct statement : pegtl::seq< prefix, whitespaces_any, identifier, pegtl::opt< whitespaces_any, arguments > > {};
+        }
+        namespace ControlFlow
+        {
+            struct return_keyword : pegtl::string< 'r', 'e', 't', 'u', 'r', 'n' > {};
+            struct return_statement : pegtl::seq< return_keyword, whitespaces_any, pegtl::opt< value, whitespaces_any >, semicolons > {};
+            struct continue_keyword : pegtl::string< 'c', 'o', 'n', 't', 'i', 'n', 'u', 'e' > {};
+            struct continue_statement : pegtl::seq< continue_keyword, whitespaces_any, semicolons > {};
+            struct break_keyword : pegtl::string< 'b', 'r', 'e', 'a', 'k' > {};
+            struct break_statement : pegtl::seq< break_keyword, whitespaces_any, semicolons > {};
+            struct if_keyword : pegtl::string< 'i', 'f' > {};
+            struct else_keyword : pegtl::string< 'e', 'l', 's', 'e' > {};
+            struct if_statement : pegtl::seq< if_keyword, whitespaces_any, value, whitespaces_any, pegtl::sor< block, statement > > {};
+            struct else_if_statement : pegtl::seq< else_keyword, whitespaces_any, if_statement > {};
+            struct else_statement : pegtl::seq< else_keyword, whitespaces_any, pegtl::sor< block, statement > > {};
+            struct condition_statement : pegtl::seq< if_statement, whitespaces_any, pegtl::star< else_if_statement, whitespaces_any >, pegtl::opt< else_statement > > {};
+            struct for_keyword : pegtl::string< 'f', 'o', 'r' > {};
+            struct for_stage_init : pegtl::opt< pegtl::sor< Variable::declaration_assignment, value > > {};
+            struct for_stage_condition : pegtl::opt< value > {};
+            struct for_stage_iteration : pegtl::opt< value > {};
+            struct for_stages : pegtl::seq< pegtl::one< '(' >, whitespaces_any, for_stage_init, whitespaces_any, pegtl::one< ';' >, whitespaces_any, for_stage_condition, whitespaces_any, pegtl::one< ';' >, whitespaces_any, for_stage_iteration, whitespaces_any, pegtl::one< ')' > > {};
+            struct for_statement : pegtl::seq< for_keyword, whitespaces_any, for_stages, whitespaces_any, pegtl::sor< block, statement > > {};
+            struct foreach_keyword : pegtl::string< 'f', 'o', 'r', 'e', 'a', 'c', 'h' > {};
+            struct foreach_stage : pegtl::seq< pegtl::one< '(' >, whitespaces_any, Variable::declaration, whitespaces_any, pegtl::string< 'i', 'n' >, whitespaces_any, value, whitespaces_any, pegtl::one< ')' > > {};
+            struct foreach_statement : pegtl::seq< foreach_keyword, whitespaces_any, foreach_stage, whitespaces_any, pegtl::sor< block, statement > > {};
+            struct while_keyword : pegtl::string< 'w', 'h', 'i', 'l', 'e' > {};
+            struct while_statement : pegtl::seq< while_keyword, whitespaces_any, value, whitespaces_any, pegtl::sor< block, statement > > {};
+        }
+        struct expression_statement : pegtl::seq< value, whitespaces_any, semicolons > {};
+        struct statement : pegtl::sor< comment/*, block, object_destroy_statement, variable_statement, ControlFlow::while_statement, ControlFlow::for_statement, ControlFlow::foreach_statement, ControlFlow::condition_statement, ControlFlow::return_statement, ControlFlow::continue_statement, ControlFlow::break_statement, Class::Method::call_statement, Class::definition_statement, expression_statement*/ > {};
         struct statements : pegtl::plus< pegtl::seq< whitespaces_any, statement, whitespaces_any > > {};
         struct grammar : pegtl::must< pegtl::opt< statements >, pegtl::eof > {};
 

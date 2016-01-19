@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="KaijuCompilerCommandLine" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="[Win] Debug">
+				<Option output="bin/Win/Debug/kaijuc-d" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Win/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="-i ../test/test.kj -o ../test/test.ast" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add library="libKaijuCompiler-d.a" />
+					<Add directory="../KaijuCompiler/bin/Win/Debug" />
+				</Linker>
+			</Target>
+			<Target title="[Win] Release">
+				<Option output="bin/Win/Release/kaijuc" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Win/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="libKaijuCompiler.a" />
+					<Add directory="../KaijuCompiler/bin/Win/Release" />
+				</Linker>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="[Win]" targets="[Win] Debug;[Win] Release;" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-Wfatal-errors" />
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+			<Add option="-Werror" />
+			<Add directory="../KaijuCompiler/include" />
+		</Compiler>
+		<Unit filename="main.cpp" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
