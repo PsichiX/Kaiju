@@ -1,7 +1,9 @@
 #!/usr/bin/env kaiju
 
-// use directive (#) to tell compiler to use Std class.
+// use directive (%) to tell compiler to use Std class.
 % use("Std.kj")
+% use("Math.kj")
+% use("Array.kj")
 
 // in Kaiju everything is an object of some class (#), so class is your God now.
 # Program : Object
@@ -23,7 +25,34 @@
 		$ result = Add(a, b);
 		
 		Std.WriteLine(result);
-		
+
+		// perform for-loop.
+		for($ i = 0; i.LessThan(10); i.Increment())
+		{
+			Std.WriteLine(result);
+			if(i.GreaterThan(5))
+				break;
+			continue;
+			Std.WriteLine("Not reachable");
+		}
+
+		// perform foreach-loop.
+		Std.WriteLine("Argv:");
+		foreach(i in argv)
+			Std.WriteLine(i);
+
+		// here we create and fill an array.
+		$ c = +Array();
+		c.Push(0, 1, 2, 3, 4);
+
+		// perform while-loop.
+		//while(argv.Count().GreaterThan(0))
+		while(c.Count().GreaterThan(0))
+			c.Pop();
+
+		// here we simply destroy array.
+		-c;
+
 		// you can return value, otherwise method will return null,
 		// which is default value of any object.
 		return result;
