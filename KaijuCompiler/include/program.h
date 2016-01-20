@@ -85,12 +85,77 @@ namespace Kaiju
             class Block : public Convertible
             {
             public:
-                Block( Program* p, ASTNode* n );
+                Block( Program* p, ASTNode* n, bool oneStatement = false );
                 virtual ~Block();
 
                 bool convertToISC( std::stringstream& output ) { return false; };
 
+                std::map< std::string, Variable* > variables;
                 std::vector< Convertible* > statements;
+
+            private:
+                bool processStatement( ASTNode* n );
+            };
+
+            class ObjectDestruction : public Convertible
+            {
+            public:
+                ObjectDestruction( Program* p, ASTNode* n );
+                virtual ~ObjectDestruction();
+
+                bool convertToISC( std::stringstream& output ) { return false; };
+
+                Value* value;
+            };
+
+            class ControlFlowWhileLoop : public Convertible
+            {
+            public:
+                ControlFlowWhileLoop( Program* p, ASTNode* n );
+                virtual ~ControlFlowWhileLoop();
+
+                bool convertToISC( std::stringstream& output ) { return false; };
+
+                Value* condition;
+                Block* statements;
+            };
+
+            class ControlFlowForLoop : public Convertible
+            {
+            public:
+                ControlFlowForLoop( Program* p, ASTNode* n );
+                virtual ~ControlFlowForLoop();
+
+                bool convertToISC( std::stringstream& output ) { return false; };
+
+                Variable* init;
+                Value* condition;
+                Value* iteration;
+                Block* statements;
+            };
+
+            class ControlFlowForeachLoop : public Convertible
+            {
+            public:
+                ControlFlowForeachLoop( Program* p, ASTNode* n );
+                virtual ~ControlFlowForeachLoop();
+
+                bool convertToISC( std::stringstream& output ) { return false; };
+
+                std::string iteratorId;
+                Value* collection;
+                Block* statements;
+            };
+
+            class ControlFlowCondition : public Convertible
+            {
+            public:
+                ControlFlowCondition( Program* p, ASTNode* n );
+                virtual ~ControlFlowCondition();
+
+                bool convertToISC( std::stringstream& output ) { return false; };
+
+                std::vector< std::pair< Value*, Block* > > stages;
             };
 
             class Method : public Convertible

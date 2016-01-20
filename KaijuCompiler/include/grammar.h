@@ -111,7 +111,7 @@ namespace Kaiju
             struct else_statement : pegtl::seq< else_keyword, whitespaces_any, pegtl::sor< block, statement_inner > > {};
             struct condition_statement : pegtl::seq< if_statement, whitespaces_any, pegtl::star< else_if_statement, whitespaces_any >, pegtl::opt< else_statement > > {};
             struct for_keyword : pegtl::string< 'f', 'o', 'r' > {};
-            struct for_stage_init : pegtl::opt< pegtl::sor< Variable::declaration_assignment, value > > {};
+            struct for_stage_init : pegtl::opt< variable > {};
             struct for_stage_condition : pegtl::opt< value > {};
             struct for_stage_iteration : pegtl::opt< value > {};
             struct for_stages : pegtl::seq< pegtl::one< '(' >, whitespaces_any, for_stage_init, whitespaces_any, pegtl::one< ';' >, whitespaces_any, for_stage_condition, whitespaces_any, pegtl::one< ';' >, whitespaces_any, for_stage_iteration, whitespaces_any, pegtl::one< ')' > > {};

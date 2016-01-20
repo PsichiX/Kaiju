@@ -60,7 +60,6 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::for_stage_init, "control_flow.for_stage_init", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::for_stage_condition, "control_flow.for_stage_condition", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::for_stage_iteration, "control_flow.for_stage_iteration", true );
-            REGISTER_TYPE( Kaiju::Grammar::ControlFlow::for_stages, "control_flow.for_stages", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::for_statement, "control_flow.for_statement", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::foreach_stage, "control_flow.foreach_stage", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::foreach_statement, "control_flow.foreach_statement", true );

@@ -1,34 +1,79 @@
 #!/usr/bin/env kaiju
 
+// use directive (%) to tell compiler to use Std class.
+% use("Std.kj")
+% use("Math.kj")
+% use("Array.kj")
+
+// in Kaiju everything is an object of some class (#), so class is your God now.
 # Program : Object
 {
-	~$ v = 1;
+	// static (~) class field ($).
+	// this is equivalent to: hello = new String("Hello World!");
+	~$ hello = "Hello World!";
 
+	// static (~) class method (@).
+	// Main always comes with array of program arguments as parameters.
 	~@ Main(argv)
 	{
-		Print(v);
-		$ result = Add(1, 2);
+		// just usual function call.
+		Std.WriteLine(hello);
+		
+		// declare local variables ($).
+		$ a = Int.parse(argv.Get(1));
+		$ b = Int.Parse(argv.Get(2));
+		$ result = Add(a, b);
+		
+		Std.WriteLine(result);
+
+		// perform for-loop.
+		for($ i = 0; i.LessThan(10); i.Increment())
+		{
+			Std.WriteLine(result);
+			if(i.GreaterThan(5))
+				break;
+			continue;
+			Std.WriteLine("Not reachable");
+		}
+
+		// perform foreach-loop.
+		Std.WriteLine("Argv:");
+		foreach(i in argv)
+			Std.WriteLine(i);
+
+		// here we create and fill an array.
+		$ c = +Array();
+		c.Push(0, 1, 2, 3, 4);
+
+		// perform while-loop.
+		//while(argv.Count().GreaterThan(0))
+		while(c.Count().GreaterThan(0))
+			c.Pop();
+
+		// here we simply destroy array.
+		-c;
+
+		// you can return value, otherwise method will return null,
+		// which is default value of any object.
+		return result;
 	}
 
-	~@ Print(value)
+	// This method is wrapper for low-level assembler operation.
+	~@ Add(a, b)
 	{
-		% ensureType(value, Int)
-
-		% inject("dbgi *:$value")
-	}
-
-	/*~@ Add(a, b)
-	{
+		// make sure that arguments have proper types.
 		% ensureType(a, Int)
 		% ensureType(b, Int)
 
 		$ result = 0;
 
+		// here we inject Intuicio Assembler code.
+		// get values from managed objects to registry, perform operation and return result.
 		% inject("movi regi:0 *:$a->Int.value")
 		% inject("movi regi:1 *:$b->Int.value")
 		% inject("addi 2 0 1")
 		% inject("movi *:$result->Int.value regi:2")
 
 		return result;
-	}*/
+	}
 }
