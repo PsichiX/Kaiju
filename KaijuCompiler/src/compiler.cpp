@@ -63,6 +63,10 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::foreach_stage, "control_flow.foreach_stage", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::foreach_statement, "control_flow.foreach_statement", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::while_statement, "control_flow.while_statement", true );
+            REGISTER_TYPE( Kaiju::Grammar::Operator::binary_operator, "operator.binary_operator", false );
+            REGISTER_TYPE( Kaiju::Grammar::Operator::binary_operation, "operator.binary_operation", true );
+            REGISTER_TYPE( Kaiju::Grammar::Operator::unary_operator, "operator.unary_operator", false );
+            REGISTER_TYPE( Kaiju::Grammar::Operator::unary_operation, "operator.unary_operation", true );
             REGISTER_TYPE( Kaiju::Grammar::statement_inner, "statement_inner", true );
             REGISTER_TYPE( Kaiju::Grammar::statement_outter, "statement_outter", true );
             ASTGenerator::getInstance()->acquire( &output, input.data() );

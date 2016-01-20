@@ -20,6 +20,11 @@ namespace Kaiju
                 struct call_function;
             }
         }
+        namespace Operator
+        {
+            struct binary_operation;
+            struct unary_operation;
+        }
         namespace Comment
         {
             struct inlined : pegtl::seq< pegtl::two< '/' >, pegtl::until< pegtl::eolf > > {};
@@ -51,7 +56,7 @@ namespace Kaiju
         struct null_value : pegtl::string< 'n', 'u', 'l', 'l'  > {};
         struct field : pegtl::seq< identifier, pegtl::star< identifier > > {};
         struct access_value : pegtl::seq< whitespaces_any, pegtl::one< '.' >, whitespaces_any, value > {};
-        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call, number, string, null_value, identifier >, pegtl::opt< access_value > > {};
+        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call, Operator::binary_operation, Operator::unary_operation, number, string, null_value, identifier >, pegtl::opt< access_value > > {};
         namespace Variable
         {
             struct prefix : pegtl::one< '$' > {};
@@ -87,7 +92,7 @@ namespace Kaiju
             struct prefix : pegtl::one< '#' > {};
             struct inheritance : pegtl::seq< pegtl::one< ':' >, whitespaces_any, identifier > {};
             struct body : pegtl::seq< pegtl::one< '{' >, whitespaces_any, pegtl::star< pegtl::sor< variable_statement, Method::definition_statement >, whitespaces_any >, pegtl::one< '}' > > {};
-            struct definition_statement : pegtl::seq< prefix, whitespaces_any, identifier, whitespaces_any, inheritance, whitespaces_any, body > {};
+            struct definition_statement : pegtl::seq< prefix, whitespaces_any, identifier, pegtl::opt< whitespaces_any, inheritance >, whitespaces_any, body > {};
         }
         namespace Directive
         {
@@ -121,6 +126,34 @@ namespace Kaiju
             struct foreach_statement : pegtl::seq< foreach_keyword, whitespaces_any, foreach_stage, whitespaces_any, pegtl::sor< block, statement_inner > > {};
             struct while_keyword : pegtl::string< 'w', 'h', 'i', 'l', 'e' > {};
             struct while_statement : pegtl::seq< while_keyword, whitespaces_any, pegtl::one< '(' >, whitespaces_any, value, whitespaces_any, pegtl::one< ')' >, whitespaces_any, pegtl::sor< block, statement_inner > > {};
+        }
+        namespace Operator
+        {
+            struct add : pegtl::one< '+' > {};
+            struct subtract : pegtl::one< '-' > {};
+            struct multiply : pegtl::one< '*' > {};
+            struct divide : pegtl::one< '/' > {};
+            struct increment : pegtl::two< '+' > {};
+            struct decrement : pegtl::two< '-' > {};
+            struct logical_and : pegtl::two< '&' > {};
+            struct logical_or : pegtl::two< '|' > {};
+            struct logical_not : pegtl::one< '!' > {};
+            struct bitwise_and : pegtl::one< '&' > {};
+            struct bitwise_or : pegtl::one< '|' > {};
+            struct bitwise_xor : pegtl::one< '^' > {};
+            struct bitwise_not : pegtl::one< '~' > {};
+            struct bitwise_lshift : pegtl::two< '<' > {};
+            struct bitwise_rshift : pegtl::two< '>' > {};
+            struct conditional_equal : pegtl::two< '=' > {};
+            struct conditional_not_equal : pegtl::sor< pegtl::string< '!', '=' >, pegtl::string< '<', '>' > > {};
+            struct conditional_less : pegtl::one< '<' > {};
+            struct conditional_greater : pegtl::one< '>' > {};
+            struct conditional_less_or_equal : pegtl::string< '<', '=' > {};
+            struct conditional_greater_or_equal : pegtl::string< '>', '=' > {};
+            struct binary_operator : pegtl::sor< add, subtract, multiply, divide, logical_and, logical_or, bitwise_and, bitwise_or, bitwise_xor, bitwise_lshift, bitwise_rshift, conditional_equal, conditional_not_equal, conditional_less, conditional_greater, conditional_less_or_equal, conditional_greater_or_equal > {};
+            struct binary_operation : pegtl::seq< pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, binary_operator, whitespaces_any, value, whitespaces_any, pegtl::one< '}' > > {};
+            struct unary_operator : pegtl::sor< increment, decrement, logical_not, bitwise_not > {};
+            struct unary_operation : pegtl::seq< unary_operator, whitespaces_any, pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, pegtl::one< '}' > > {};
         }
         struct expression_statement : pegtl::seq< value, whitespaces_any, semicolons > {};
         struct statement_inner : pegtl::sor< block, Directive::statement, variable_statement, object_destroy_statement, ControlFlow::while_statement, ControlFlow::for_statement, ControlFlow::foreach_statement, ControlFlow::condition_statement, ControlFlow::return_statement, ControlFlow::continue_statement, ControlFlow::break_statement, Class::Method::call_statement, expression_statement > {};

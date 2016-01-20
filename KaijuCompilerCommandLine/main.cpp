@@ -23,20 +23,23 @@ enum Format
     F_AUTO,
     F_KJ,
     F_AST,
+    F_PST,
     F_ISC
 };
 
 Format getFormatFromExtension( const std::string& path )
 {
-    if( path.length() < 4 )
+    size_t f = path.rfind( '.' );
+    if( f < 0 )
         return F_UNKNOWN;
-    std::string ext = path.substr( path.length() - 4 );
+    std::string ext = path.substr( f );
     if( ext == ".ast" )
         return F_AST;
+    else if( ext == ".pst" )
+        return F_PST;
     else if( ext == ".isc" )
         return F_ISC;
-    ext = path.substr( path.length() - 3 );
-    if( ext == ".kj" )
+    else if( ext == ".kj" )
         return F_KJ;
     return F_UNKNOWN;
 }
@@ -93,6 +96,8 @@ int main( int argc, char** argv )
         {
             if( arg == "ast")
                 outputFormat = F_AST;
+            else if( arg == "pst")
+                outputFormat = F_PST;
             else if( arg == "isc")
                 outputFormat = F_ISC;
             mode = M_CMD;
@@ -150,7 +155,7 @@ int main( int argc, char** argv )
     double dts;
     if( inputFormat == F_KJ )
     {
-        if( outputFormat == F_AST || outputFormat == F_ISC )
+        if( outputFormat == F_AST || outputFormat == F_PST || outputFormat == F_ISC )
         {
             start = clock();
             if( !silent )
@@ -167,7 +172,7 @@ int main( int argc, char** argv )
                     Kaiju::Compiler::convertASTNodeToIRVT( ast, outputContent );
                     ast.clear();
                 }
-                else if( outputFormat == F_ISC )
+                else if( /*outputFormat == F_ISC ||*/ outputFormat == F_PST )
                 {
                     stop = clock();
                     dt = stop - start;
@@ -179,7 +184,7 @@ int main( int argc, char** argv )
                         std::cout << "Done! Time consumed by processing: " << (int)dtms << "ms (" << dts << "s)" << std::endl;
                         std::cout << "Processing ISC..." << std::endl;
                     }
-                    Kaiju::Compiler::Program program( &ast );
+                    Kaiju::Compiler::Program program( &ast, inputContent );
                     stop = clock();
                     dt = stop - start;
                     dtms = ( dt * 1000.0 ) / CLOCKS_PER_SEC;
@@ -197,11 +202,17 @@ int main( int argc, char** argv )
                         return EXIT_FAILURE;
                     }
                     start = clock();
-                    if( outputFormat == F_ISC )
+                    /*if( outputFormat == F_ISC )
                     {
                         if( !silent )
                             std::cout << "Producing ISC..." << std::endl;
                         program.convertToISC( outputContent );
+                    }
+                    else*/ if( outputFormat == F_PST )
+                    {
+                        if( !silent )
+                            std::cout << "Producing PST..." << std::endl;
+                        program.convertToPST( outputContent );
                     }
                 }
                 else

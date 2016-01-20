@@ -42,7 +42,7 @@
 				<Option object_output="obj/Linux/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-i ../test/test.kj -o ../test/test.ast" />
+				<Option parameters="-i ../test/test.kj -o ../test/test.pst" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>

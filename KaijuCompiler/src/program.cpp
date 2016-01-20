@@ -5,11 +5,25 @@ namespace Kaiju
 {
     namespace Compiler
     {
-        Program::Program( ASTNode* n )
-        : Convertible( this, n )
-        , m_uidGenerator( 0 )
+        void Convertible::appendError( ASTNode* node, const std::string& message )
         {
-            for( auto sn : n->nodes )
+            if( node )
+                m_errors << "[" << node->line << "(" << node->column << "):" << node->position << "-" << (node->position + node->size) << "]" << std::endl
+                << message << std::endl << std::endl << program->subInput(node->position, node->size) << std::endl << std::endl;
+            else
+                m_errors << "[]" << std::endl << message << std::endl << std::endl;
+        }
+
+        Program::Program( ASTNode* node, const std::string& input )
+        : Convertible( this, node )
+        , stackSize( 8 * 1024 )
+        , registersI( 8 )
+        , registersF( 8 )
+        , m_input( (std::string*)&input )
+        , m_uidGenerator( 0 )
+        , m_pstUidGenerator( 0 )
+        {
+            for( auto sn : node->nodes )
             {
                 if( sn.type == "statement_outter" )
                 {
@@ -20,6 +34,7 @@ namespace Kaiju
                         {
                             appendError( d );
                             Delete( d );
+                            m_input = 0;
                             return;
                         }
                         statements.push_back( d );
@@ -31,6 +46,7 @@ namespace Kaiju
                         {
                             appendError( c );
                             Delete( c );
+                            m_input = 0;
                             return;
                         }
                         if( classes.count( c->id ) )
@@ -39,6 +55,7 @@ namespace Kaiju
                             ss << "Class already exists: " << c->id;
                             appendError( &sn, ss.str() );
                             Delete( c );
+                            m_input = 0;
                             return;
                         }
                         classes[ c->id ] = c;
@@ -46,20 +63,26 @@ namespace Kaiju
                     else
                     {
                         appendError( &sn, "AST node is not either class definition statement or directive statement!" );
+                        m_input = 0;
                         return;
                     }
                 }
                 else
                 {
                     appendError( &sn, "AST node is not type of statement_outter!" );
+                    m_input = 0;
                     return;
                 }
             }
             isValid = true;
+            m_input = 0;
         }
 
         Program::~Program()
         {
+            stackSize = 0;
+            registersI = 0;
+            registersF = 0;
             constInts.clear();
             constFloats.clear();
             constStrings.clear();
@@ -69,7 +92,35 @@ namespace Kaiju
             for( auto s : statements )
                 Delete( s );
             statements.clear();
+            m_input = 0;
             m_uidGenerator = 0;
+            m_pstUidGenerator = 0;
+        }
+
+        bool Program::convertToPST( std::stringstream& output, int level )
+        {
+            m_pstUidGenerator = 0;
+            std::string lvl( level, '-' );
+            output << "[" << nextUIDpst() << "]" << lvl << "(program)" << std::endl;
+            output << "[" << nextUIDpst() << "]" << lvl << "-(program.stackSize)" << stackSize << std::endl;
+            output << "[" << nextUIDpst() << "]" << lvl << "-(program.registersI)" << registersI << std::endl;
+            output << "[" << nextUIDpst() << "]" << lvl << "-(program.registersF)" << registersF << std::endl;
+            output << "[" << nextUIDpst() << "]" << lvl << "-(constInts)" << std::endl;
+            for( auto& kv : constInts )
+                output << "[" << nextUIDpst() << "]" << lvl << "--(" << kv.second << ")" << kv.first << std::endl;
+            output << "[" << nextUIDpst() << "]" << lvl << "-(constFloats)" << std::endl;
+            for( auto& kv : constFloats )
+                output << "[" << nextUIDpst() << "]" << lvl << "--(" << kv.second << ")" << kv.first << std::endl;
+            output << "[" << nextUIDpst() << "]" << lvl << "-(constStrings)" << std::endl;
+            for( auto& kv : constStrings )
+                output << "[" << nextUIDpst() << "]" << lvl << "--(" << kv.second << ")" << kv.first << std::endl;
+            output << "[" << nextUIDpst() << "]" << lvl << "-(statements)" << std::endl;
+            for( auto s : statements )
+                s->convertToPST( output, level + 1 );
+            output << "[" << nextUIDpst() << "]" << lvl << "-(classes)" << std::endl;
+            for( auto& kv : classes )
+                kv.second->convertToPST( output, level + 2 );
+            return true;
         }
 
         const std::string& Program::constantInt( int v )
@@ -152,10 +203,21 @@ namespace Kaiju
             arguments.clear();
         }
 
+        bool Program::Directive::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(directive)" << id << std::endl;
+            for( auto v : arguments )
+                v->convertToPST( output, level + 1 );
+            return true;
+        }
+
         Program::Variable::Variable( Program* p, ASTNode* n )
         : Convertible( p, n )
+        , type( T_UNDEFINED )
         , isStatic( false )
-        , value( 0 )
+        , valueL( 0 )
+        , valueR( 0 )
         {
             if( n->type != "variable" )
             {
@@ -186,6 +248,42 @@ namespace Kaiju
                 }
                 ASTNode* nid = nd->findByType( "identifier" );
                 id = nid->value;
+                type = T_DECLARATION;
+                isValid = true;
+            }
+            else if( n->hasType( "variable.assignment" ) )
+            {
+                if( !n->hasType( "variable.assignment" ) )
+                {
+                    appendError( n, "Variable does not have assignment!" );
+                    return;
+                }
+                ASTNode* na = n->findByType( "variable.assignment" );
+                if( na->nodes[ 0 ].type != "value" )
+                {
+                    appendError( &na->nodes[ 0 ], "Variable assignment first AST node is not a value!" );
+                    return;
+                }
+                if( na->nodes[ 1 ].type != "value" )
+                {
+                    appendError( &na->nodes[ 1 ], "Variable assignment first AST node is not a value!" );
+                    return;
+                }
+                Value* v = new Value( p, &na->nodes[ 0 ] );
+                if( !v->isValid )
+                {
+                    appendError( v );
+                    return;
+                }
+                valueL = v;
+                v = new Value( p, &na->nodes[ 1 ] );
+                if( !v->isValid )
+                {
+                    appendError( v );
+                    return;
+                }
+                valueR = v;
+                type = T_ASSIGNMENT;
                 isValid = true;
             }
             else if( n->hasType( "variable.declaration_assignment" ) )
@@ -225,12 +323,13 @@ namespace Kaiju
                     Delete( v );
                     return;
                 }
-                value = v;
+                valueR = v;
+                type = T_DECLARATION_ASSIGNMENT;
                 isValid = true;
             }
             else
             {
-                appendError( n, "Variable is not either declaration or declaration with assignment!" );
+                appendError( n, "Variable is not either declaration, assignment or declaration with assignment!" );
                 return;
             }
         }
@@ -239,7 +338,26 @@ namespace Kaiju
         {
             isStatic = false;
             id.clear();
-            Delete( value );
+            Delete( valueL );
+            Delete( valueR );
+        }
+
+        bool Program::Variable::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(variable)" << id << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(variable.static)" << isStatic << std::endl;
+            if( valueL )
+            {
+                output << "[" << program->nextUIDpst() << "]" << lvl << "-(valueLeft)" << std::endl;
+                valueL->convertToPST( output, level + 1 );
+            }
+            if( valueR )
+            {
+                output << "[" << program->nextUIDpst() << "]" << lvl << "-(valueRight)" << std::endl;
+                valueR->convertToPST( output, level + 1 );
+            }
+            return true;
         }
 
         Program::Block::Block( Program* p, ASTNode* n, bool oneStatement )
@@ -252,7 +370,7 @@ namespace Kaiju
                     appendError( n, "AST node is not type of statement_inner!" );
                     return;
                 }
-                if( !processStatement( n ) );
+                if( !processStatement( n ) )
                     return;
             }
             else
@@ -287,8 +405,26 @@ namespace Kaiju
             statements.clear();
         }
 
+        bool Program::Block::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(block)" << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(variables)" << std::endl;
+            for( auto& kv : variables )
+                kv.second->convertToPST( output, level + 2 );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(statements)" << std::endl;
+            for( auto s : statements )
+                s->convertToPST( output, level + 2 );
+            return true;
+        }
+
         bool Program::Block::processStatement( ASTNode* n )
         {
+            if( n->type != "statement_inner" )
+            {
+                appendError( n, "AST node is not type of statement_inner!" );
+                return false;
+            }
             if( n->hasType( "block" ) )
             {
                 Block* b = new Block( program, n->findByType( "block" ) );
@@ -385,6 +521,39 @@ namespace Kaiju
                 }
                 statements.push_back( c );
             }
+            else if( n->hasType( "control_flow.return_statement" ) )
+            {
+                ControlFlowReturn* r = new ControlFlowReturn( program, n->findByType( "control_flow.return_statement" ) );
+                if( !r->isValid )
+                {
+                    appendError( r );
+                    Delete( r );
+                    return false;
+                }
+                statements.push_back( r );
+            }
+            else if( n->hasType( "control_flow.continue_statement" ) )
+            {
+                ControlFlowContinue* c = new ControlFlowContinue( program, n->findByType( "control_flow.continue_statement" ) );
+                if( !c->isValid )
+                {
+                    appendError( c );
+                    Delete( c );
+                    return false;
+                }
+                statements.push_back( c );
+            }
+            else if( n->hasType( "control_flow.break_statement" ) )
+            {
+                ControlFlowBreak* b = new ControlFlowBreak( program, n->findByType( "control_flow.break_statement" ) );
+                if( !b->isValid )
+                {
+                    appendError( b );
+                    Delete( b );
+                    return false;
+                }
+                statements.push_back( b );
+            }
             else if( n->hasType( "class.method.call" ) )
             {
                 Method::Call* c = new Method::Call( program, n->findByType( "class.method.call" ) );
@@ -409,7 +578,7 @@ namespace Kaiju
             }
             else
             {
-                appendError( n, "AST node is not either block, directive statement, variable statement, method call!" );
+                appendError( n, "AST node is not either a code block, directive statement, variable statement, object destruction, while-loop, for-loop, foreach-loop, condition statement, return statement, continue statement, break statement, method call or value expression!" );
                 return false;
             }
             return true;
@@ -424,7 +593,7 @@ namespace Kaiju
                 appendError( n, "AST node is not type of object_destroy_statement!" );
                 return;
             }
-            if( n->hasType( "value" ) )
+            if( !n->hasType( "value" ) )
             {
                 appendError( n, "Object destruction does not provide expression!" );
                 return;
@@ -443,6 +612,14 @@ namespace Kaiju
         Program::ObjectDestruction::~ObjectDestruction()
         {
             Delete( value );
+        }
+
+        bool Program::ObjectDestruction::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(object_destruction)" << std::endl;
+            value->convertToPST( output, level + 1 );
+            return true;
         }
 
         Program::ControlFlowWhileLoop::ControlFlowWhileLoop( Program* p, ASTNode* n )
@@ -502,6 +679,15 @@ namespace Kaiju
         {
             Delete( condition );
             Delete( statements );
+        }
+
+        bool Program::ControlFlowWhileLoop::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(whileLoop)" << std::endl;
+            condition->convertToPST( output, level + 1 );
+            statements->convertToPST( output, level + 1 );
+            return true;
         }
 
         Program::ControlFlowForLoop::ControlFlowForLoop( Program* p, ASTNode* n )
@@ -614,6 +800,23 @@ namespace Kaiju
             Delete( statements );
         }
 
+        bool Program::ControlFlowForLoop::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(forLoop)" << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(init)" << std::endl;
+            if( init )
+                init->convertToPST( output, level + 2 );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(condition)" << std::endl;
+            if( condition )
+                condition->convertToPST( output, level + 2 );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(iteration)" << std::endl;
+            if( iteration )
+                iteration->convertToPST( output, level + 2 );
+            statements->convertToPST( output, level + 1 );
+            return true;
+        }
+
         Program::ControlFlowForeachLoop::ControlFlowForeachLoop( Program* p, ASTNode* n )
         : Convertible( p, n )
         , collection( 0 )
@@ -629,7 +832,7 @@ namespace Kaiju
                 appendError( n, "Foreach-loop does not have stage!" );
                 return;
             }
-            ASTNode* ns = n->findByType( "control_flow.foreach_state" );
+            ASTNode* ns = n->findByType( "control_flow.foreach_stage" );
             if( !ns->hasType( "identifier" ) )
             {
                 appendError( ns, "Foreach-loop does not have iterator identifier!" );
@@ -687,10 +890,20 @@ namespace Kaiju
             Delete( statements );
         }
 
+        bool Program::ControlFlowForeachLoop::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(foreachLoop)" << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(foreachLoop.iterator)" << iteratorId << std::endl;
+            collection->convertToPST( output, level + 1 );
+            statements->convertToPST( output, level + 1 );
+            return true;
+        }
+
         Program::ControlFlowCondition::ControlFlowCondition( Program* p, ASTNode* n )
         : Convertible( p, n )
         {
-            if( n->type != "control_flow.foreach_statement" )
+            if( n->type != "control_flow.condition_statement" )
             {
                 appendError( n, "AST node is not type of control_flow.foreach_statement!" );
                 return;
@@ -772,6 +985,21 @@ namespace Kaiju
             stages.clear();
         }
 
+        bool Program::ControlFlowCondition::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(condition)" << std::endl;
+            for( auto s : stages )
+            {
+                output << "[" << program->nextUIDpst() << "]" << lvl << "-(stage)" << std::endl;
+                output << "[" << program->nextUIDpst() << "]" << lvl << "-(stage.condition)" << (bool)s.first << std::endl;
+                if( s.first )
+                    s.first->convertToPST( output, level + 2 );
+                s.second->convertToPST( output, level + 1 );
+            }
+            return true;
+        }
+
         Program::ControlFlowReturn::ControlFlowReturn( Program* p, ASTNode* n )
         : Convertible( p, n )
         , value( 0 )
@@ -781,24 +1009,31 @@ namespace Kaiju
                 appendError( n, "AST node is not type of control_flow.return_statement!" );
                 return;
             }
-            if( !n->hasType( "value" ) )
+            if( n->hasType( "value" ) )
             {
-                appendError( n, "Return does not have a value!" );
-                return;
+                Value* v = new Value( p, n->findByType( "value" ) );
+                if( !v->isValid )
+                {
+                    appendError( v );
+                    return;
+                }
+                value = v;
             }
-            Value* v = new Value( p, n->findByType( "value" ) );
-            if( !v->isValid )
-            {
-                appendError( v );
-                return;
-            }
-            value = v;
             isValid = true;
         }
 
         Program::ControlFlowReturn::~ControlFlowReturn()
         {
             Delete( value );
+        }
+
+        bool Program::ControlFlowReturn::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(return)" << std::endl;
+            if( value )
+                value->convertToPST( output, level + 1 );
+            return true;
         }
 
         Program::ControlFlowContinue::ControlFlowContinue( Program* p, ASTNode* n )
@@ -812,6 +1047,13 @@ namespace Kaiju
             isValid = true;
         }
 
+        bool Program::ControlFlowContinue::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(continue)" << std::endl;
+            return true;
+        }
+
         Program::ControlFlowBreak::ControlFlowBreak( Program* p, ASTNode* n )
         : Convertible( p, n )
         {
@@ -823,18 +1065,132 @@ namespace Kaiju
             isValid = true;
         }
 
+        bool Program::ControlFlowBreak::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(break)" << std::endl;
+            return true;
+        }
+
+        Program::BinaryOperation::BinaryOperation( Program* p, ASTNode* n )
+        : Convertible( p, n )
+        , valueL( 0 )
+        , valueR( 0 )
+        {
+            if( n->type != "operator.binary_operation" )
+            {
+                appendError( n, "AST node is not type of operator.binary_operation!" );
+                return;
+            }
+            if( n->nodes[ 0 ].type != "value" )
+            {
+                appendError( &n->nodes[ 0 ], "Binary operation first AST node is not a value!" );
+                return;
+            }
+            if( n->nodes[ 1 ].type != "operator.binary_operator" )
+            {
+                appendError( &n->nodes[ 1 ], "Binary operation second AST node is not a binary operator!" );
+                return;
+            }
+            if( n->nodes[ 2 ].type != "value" )
+            {
+                appendError( &n->nodes[ 2 ], "Binary operation third AST node is not a value!" );
+                return;
+            }
+            type = n->nodes[ 1 ].value;
+            Value* v = new Value( p, &n->nodes[ 0 ] );
+            if( !v->isValid )
+            {
+                appendError( v );
+                Delete( v );
+                return;
+            }
+            valueL = v;
+            v = new Value( p, &n->nodes[ 2 ] );
+            if( !v->isValid )
+            {
+                appendError( v );
+                Delete( v );
+                return;
+            }
+            valueR = v;
+            isValid = true;
+        }
+
+        Program::BinaryOperation::~BinaryOperation()
+        {
+            type.clear();
+            Delete( valueL );
+            Delete( valueR );
+        }
+
+        bool Program::BinaryOperation::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(binaryOperation)" << type << std::endl;
+            valueL->convertToPST( output, level + 1 );
+            valueR->convertToPST( output, level + 1 );
+            return true;
+        }
+
+        Program::UnaryOperation::UnaryOperation( Program* p, ASTNode* n )
+        : Convertible( p, n )
+        , value( 0 )
+        {
+            if( n->type != "operator.unary_operation" )
+            {
+                appendError( n, "AST node is not type of operator.binary_operation!" );
+                return;
+            }
+            if( !n->hasType( "operator.unary_operator" ) )
+            {
+                appendError( n, "Unary operation does not have operator!" );
+                return;
+            }
+            if( !n->hasType( "value" ) )
+            {
+                appendError( n, "Unary operation does not have value!" );
+                return;
+            }
+            type = n->findByType( "operator.unary_operator" )->value;
+            Value* v = new Value( p, n->findByType( "value" ) );
+            if( !v->isValid )
+            {
+                appendError( v );
+                Delete( v );
+                return;
+            }
+            value = v;
+            isValid = true;
+        }
+
+        Program::UnaryOperation::~UnaryOperation()
+        {
+            type.clear();
+            Delete( value );
+        }
+
+        bool Program::UnaryOperation::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(unaryOperation)" << type << std::endl;
+            value->convertToPST( output, level + 1 );
+            return true;
+        }
+
         Program::Method::Method( Program* p, ASTNode* n )
         : Convertible( p, n )
         , isStatic( false )
+        , statements( 0 )
         {
             if( n->type != "class.method.definition_statement" )
             {
                 appendError( n, "AST node is not type of class.method.definition_statement!" );
                 return;
             }
-            if( n->hasType( "variable.prefix" ) )
+            if( n->hasType( "class.method.prefix" ) )
                 isStatic = false;
-            else if( n->hasType( "variable.prefix_static" ) )
+            else if( n->hasType( "class.method.prefix_static" ) )
                 isStatic = true;
             else
             {
@@ -846,7 +1202,7 @@ namespace Kaiju
                 appendError( n, "Method definition does not have identifier!" );
                 return;
             }
-            if( !n->hasType( "class.method.arguments_list" ) )
+            if( !n->hasType( "class.method.definition.argument_list" ) )
             {
                 appendError( n, "Method definition does not have arguments list!" );
                 return;
@@ -858,7 +1214,7 @@ namespace Kaiju
             }
             ASTNode* nid = n->findByType( "identifier" );
             id = nid->value + "__";
-            ASTNode* nal = n->findByType( "class.method.arguments_list" );
+            ASTNode* nal = n->findByType( "class.method.definition.argument_list" );
             for( auto nala : nal->nodes )
             {
                 if( nala.type == "identifier" )
@@ -874,6 +1230,7 @@ namespace Kaiju
             if( !b->isValid )
             {
                 appendError( b );
+                Delete( b );
                 return;
             }
             statements = b;
@@ -886,6 +1243,17 @@ namespace Kaiju
             id.clear();
             arguments.clear();
             Delete( statements );
+        }
+
+        bool Program::Method::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(method)" << id << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(method.static)" << isStatic << std::endl;
+            for( auto a : arguments )
+                output << "[" << program->nextUIDpst() << "]" << lvl << "-(argument)" << a << std::endl;
+            statements->convertToPST( output, level + 1 );
+            return true;
         }
 
         Program::Method::Call::Call( Program* p, ASTNode* n )
@@ -901,7 +1269,7 @@ namespace Kaiju
                 appendError( n, "Method calling does not have method path!" );
                 return;
             }
-            if( !n->hasType( "class.method.call.arguments_list" ) )
+            if( !n->hasType( "class.method.call.argument_list" ) )
             {
                 appendError( n, "Method calling does not have arguments list!" );
                 return;
@@ -916,7 +1284,7 @@ namespace Kaiju
                 }
                 identifier.push_back( nfi.value );
             }
-            ASTNode* nal = n->findByType( "class.method.call.arguments_list" );
+            ASTNode* nal = n->findByType( "class.method.call.argument_list" );
             for( auto nala : nal->nodes )
             {
                 if( nala.type != "value" )
@@ -943,10 +1311,23 @@ namespace Kaiju
             arguments.clear();
         }
 
+        bool Program::Method::Call::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(method_call)" << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(identifierPath)" << std::endl;
+            for( auto i : identifier )
+                output << "[" << program->nextUIDpst() << "]" << lvl << "--(identifier)" << i << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(arguments)" << std::endl;
+            for( auto a : arguments )
+                a->convertToPST(  output, level + 2 );
+            return true;
+        }
+
         Program::Value::Value( Program* p, ASTNode* n )
         : Convertible( p, n )
         , type( T_UNDEFINED )
-        , methodCall( 0 )
+        , data( 0 )
         , accessValue( 0 )
         {
             if( n->type != "value" )
@@ -969,7 +1350,7 @@ namespace Kaiju
                     Delete( c );
                     return;
                 }
-                methodCall = c;
+                data = c;
                 type = T_OBJECT_CREATE;
             }
             else if( n->hasType( "class.method.call" ) )
@@ -981,8 +1362,32 @@ namespace Kaiju
                     Delete( c );
                     return;
                 }
-                methodCall = c;
+                data = c;
                 type = T_METHOD_CALL;
+            }
+            else if( n->hasType( "operator.binary_operation" ) )
+            {
+                BinaryOperation* o = new BinaryOperation( p, n->findByType( "operator.binary_operation" ) );
+                if( !o->isValid )
+                {
+                    appendError( o );
+                    Delete( o );
+                    return;
+                }
+                data = o;
+                type = T_BINARY_OPERATION;
+            }
+            else if( n->hasType( "operator.unary_operation" ) )
+            {
+                UnaryOperation* o = new UnaryOperation( p, n->findByType( "operator.unary_operation" ) );
+                if( !o->isValid )
+                {
+                    appendError( o );
+                    Delete( o );
+                    return;
+                }
+                data = o;
+                type = T_UNARY_OPERATION;
             }
             else if( n->hasType( "number" ) )
             {
@@ -1042,7 +1447,7 @@ namespace Kaiju
             }
             else
             {
-                appendError( n, "Value does not have either object creator, class method call, number, string, null value or identifier!" );
+                appendError( n, "Value does not have either object creator, class method call, binary operation, unary operation, number, string, null value or identifier!" );
                 return;
             }
             if( n->hasType( "access_value" ) )
@@ -1068,8 +1473,22 @@ namespace Kaiju
         {
             type = T_UNDEFINED;
             id.clear();
-            Delete( methodCall );
+            Delete( data );
             Delete( accessValue );
+        }
+
+        bool Program::Value::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(value)" << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(value.type)" << type << std::endl;
+            if( !id.empty() )
+                output << "[" << program->nextUIDpst() << "]" << lvl << "-(value.id)" << id << std::endl;
+            if( data )
+                data->convertToPST( output, level + 1 );
+            if( accessValue )
+                accessValue->convertToPST( output, level + 1 );
+            return true;
         }
 
         Program::Class::Class( Program* p, ASTNode* n )
@@ -1085,11 +1504,6 @@ namespace Kaiju
                 appendError( n, "Class does not have identifier!" );
                 return;
             }
-            if( !n->hasType( "class.inheritance" ) )
-            {
-                appendError( n, "Class does not have inheritance specifier!" );
-                return;
-            }
             if( !n->hasType( "class.body" ) )
             {
                 appendError( n, "Class does not have body!" );
@@ -1097,18 +1511,21 @@ namespace Kaiju
             }
             ASTNode* nid = n->findByType( "identifier" );
             id = nid->value;
-            ASTNode* nin = n->findByType( "class.inheritance" );
-            if( !nin->hasType( "identifier" ) )
+            if( n->hasType( "class.inheritance" ) )
             {
-                appendError( nin, "Class inheritance does not have identifier!" );
-                return;
+                ASTNode* nin = n->findByType( "class.inheritance" );
+                if( !nin->hasType( "identifier" ) )
+                {
+                    appendError( nin, "Class inheritance does not have identifier!" );
+                    return;
+                }
+                nid = nin->findByType( "identifier" );
+                inheritance = nid->value;
             }
-            nid = nin->findByType( "identifier" );
-            inheritance = nid->value;
             ASTNode* nb = n->findByType( "class.body" );
             for( auto nbs : nb->nodes )
             {
-                if( nbs.type == "variable_statement" )
+                if( nbs.type == "variable" )
                 {
                     Variable* v = new Variable( p, &nbs );
                     if( !v->isValid )
@@ -1165,6 +1582,20 @@ namespace Kaiju
             for( auto& kv : methods )
                 Delete( kv.second );
             methods.clear();
+        }
+
+        bool Program::Class::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(class)" << id << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(class.inheritance)" << inheritance << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(fields)" << std::endl;
+            for( auto& kv : fields )
+                kv.second->convertToPST( output, level + 2 );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(methods)" << std::endl;
+            for( auto& kv : methods )
+                kv.second->convertToPST( output, level + 2 );
+            return true;
         }
     }
 }

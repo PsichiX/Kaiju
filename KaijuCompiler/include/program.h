@@ -16,9 +16,10 @@ namespace Kaiju
         {
         public:
             Convertible( Program* p, ASTNode* n ) : program( p ), isValid( false ) {};
-            virtual ~Convertible() { Delete( program ); isValid = false; };
+            virtual ~Convertible() { program = 0; isValid = false; };
 
-            bool convertToISC( std::stringstream& output ) { return false; };
+            virtual bool convertToPST( std::stringstream& output, int level = 0 ) = 0;
+            virtual bool convertToISC( std::stringstream& output ) = 0;
             std::string getErrors() { return m_errors.str(); };
             bool hasErrors() { return m_errors.rdbuf()->in_avail() != 0; };
 
@@ -26,7 +27,7 @@ namespace Kaiju
             bool isValid;
 
         protected:
-            void appendError( ASTNode* node, const std::string& message ) { if( node ) { m_errors << "[" << node->line << "(" << node->column << "):" << node->position << "-" << (node->position + node->size) << "]" << std::endl << message << std::endl << std::endl; } else { m_errors << "[]" << std::endl << message << std::endl << std::endl; } };
+            void appendError( ASTNode* node, const std::string& message );
             void appendError( Convertible* c ) { if( c ) m_errors << c->m_errors.str(); };
 
         private:
@@ -39,14 +40,20 @@ namespace Kaiju
             class Class;
             class Value;
 
-            Program( ASTNode* n );
+            Program( ASTNode* node, const std::string& input );
             virtual ~Program();
 
+            bool convertToPST( std::stringstream& output, int level = 0 );
             bool convertToISC( std::stringstream& output ) { return false; };
             const std::string& constantInt( int v );
             const std::string& constantFloat( float v );
             const std::string& constantString( const std::string& v );
+            unsigned int nextUIDpst() { return m_pstUidGenerator++; };
+            std::string subInput(size_t start, size_t length) { return m_input ? m_input->substr(start, length) : ""; };
 
+            unsigned int stackSize;
+            unsigned int registersI;
+            unsigned int registersF;
             std::map< int, std::string > constInts;
             std::map< float, std::string > constFloats;
             std::map< std::string, std::string > constStrings;
@@ -54,7 +61,9 @@ namespace Kaiju
             std::vector< Convertible* > statements;
 
         private:
+            std::string* m_input;
             unsigned int m_uidGenerator;
+            unsigned int m_pstUidGenerator;
 
         public:
             class Directive : public Convertible
@@ -63,6 +72,7 @@ namespace Kaiju
                 Directive( Program* p, ASTNode* n );
                 virtual ~Directive();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 std::string id;
@@ -72,14 +82,25 @@ namespace Kaiju
             class Variable : public Convertible
             {
             public:
+                enum Type
+                {
+                    T_UNDEFINED,
+                    T_DECLARATION,
+                    T_ASSIGNMENT,
+                    T_DECLARATION_ASSIGNMENT
+                };
+
                 Variable( Program* p, ASTNode* n );
                 virtual ~Variable();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
+                Type type;
                 bool isStatic;
                 std::string id;
-                Value* value;
+                Value* valueL;
+                Value* valueR;
             };
 
             class Block : public Convertible
@@ -88,6 +109,7 @@ namespace Kaiju
                 Block( Program* p, ASTNode* n, bool oneStatement = false );
                 virtual ~Block();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 std::map< std::string, Variable* > variables;
@@ -103,6 +125,7 @@ namespace Kaiju
                 ObjectDestruction( Program* p, ASTNode* n );
                 virtual ~ObjectDestruction();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 Value* value;
@@ -114,6 +137,7 @@ namespace Kaiju
                 ControlFlowWhileLoop( Program* p, ASTNode* n );
                 virtual ~ControlFlowWhileLoop();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 Value* condition;
@@ -126,6 +150,7 @@ namespace Kaiju
                 ControlFlowForLoop( Program* p, ASTNode* n );
                 virtual ~ControlFlowForLoop();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 Variable* init;
@@ -140,6 +165,7 @@ namespace Kaiju
                 ControlFlowForeachLoop( Program* p, ASTNode* n );
                 virtual ~ControlFlowForeachLoop();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 std::string iteratorId;
@@ -153,6 +179,7 @@ namespace Kaiju
                 ControlFlowCondition( Program* p, ASTNode* n );
                 virtual ~ControlFlowCondition();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 std::vector< std::pair< Value*, Block* > > stages;
@@ -164,6 +191,7 @@ namespace Kaiju
                 ControlFlowReturn( Program* p, ASTNode* n );
                 virtual ~ControlFlowReturn();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 Value* value;
@@ -175,6 +203,7 @@ namespace Kaiju
                 ControlFlowContinue( Program* p, ASTNode* n );
                 virtual ~ControlFlowContinue() {};
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
             };
 
@@ -184,7 +213,35 @@ namespace Kaiju
                 ControlFlowBreak( Program* p, ASTNode* n );
                 virtual ~ControlFlowBreak() {};
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+            };
+
+            class BinaryOperation : public Convertible
+            {
+            public:
+                BinaryOperation( Program* p, ASTNode* n );
+                virtual ~BinaryOperation();
+
+                bool convertToPST( std::stringstream& output, int level = 0 );
+                bool convertToISC( std::stringstream& output ) { return false; };
+
+                std::string type;
+                Value* valueL;
+                Value* valueR;
+            };
+
+            class UnaryOperation : public Convertible
+            {
+            public:
+                UnaryOperation( Program* p, ASTNode* n );
+                virtual ~UnaryOperation();
+
+                bool convertToPST( std::stringstream& output, int level = 0 );
+                bool convertToISC( std::stringstream& output ) { return false; };
+
+                std::string type;
+                Value* value;
             };
 
             class Method : public Convertible
@@ -193,6 +250,7 @@ namespace Kaiju
                 Method( Program* p, ASTNode* n );
                 virtual ~Method();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 bool isStatic;
@@ -206,6 +264,7 @@ namespace Kaiju
                     Call( Program* p, ASTNode* n );
                     virtual ~Call();
 
+                    bool convertToPST( std::stringstream& output, int level = 0 );
                     bool convertToISC( std::stringstream& output ) { return false; };
 
                     std::vector< std::string > identifier;
@@ -221,6 +280,8 @@ namespace Kaiju
                     T_UNDEFINED,
                     T_OBJECT_CREATE,
                     T_METHOD_CALL,
+                    T_BINARY_OPERATION,
+                    T_UNARY_OPERATION,
                     T_NUMBER_INT,
                     T_NUMBER_FLOAT,
                     T_STRING,
@@ -231,11 +292,12 @@ namespace Kaiju
                 Value( Program* p, ASTNode* n );
                 virtual ~Value();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 Type type;
                 std::string id;
-                Method::Call* methodCall;
+                Convertible* data;
                 Value* accessValue;
             };
 
@@ -245,6 +307,7 @@ namespace Kaiju
                 Class( Program* p, ASTNode* n );
                 virtual ~Class();
 
+                bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
 
                 std::string id;

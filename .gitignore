@@ -8,5 +8,6 @@ bin/
 *.a
 SDK/
 test/*.ast
+test/*.pst
 test/*.isc
 test/*.itc

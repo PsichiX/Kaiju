@@ -22,15 +22,18 @@
 		// declare local variables ($).
 		$ a = Int.parse(argv.Get(1));
 		$ b = Int.Parse(argv.Get(2));
+		
 		$ result = Add(a, b);
+		// which is equivalent to:
+		result = {a + b};
 		
 		Std.WriteLine(result);
 
 		// perform for-loop.
-		for($ i = 0; i.LessThan(10); i.Increment())
+		for($ i = 0; {i < 10}; ++{i})
 		{
 			Std.WriteLine(result);
-			if(i.GreaterThan(5))
+			if({i > 5})
 				break;
 			continue;
 			Std.WriteLine("Not reachable");
@@ -47,7 +50,7 @@
 
 		// perform while-loop.
 		//while(argv.Count().GreaterThan(0))
-		while(c.Count().GreaterThan(0))
+		while({c.Count() > 0})
 			c.Pop();
 
 		// here we simply destroy array.

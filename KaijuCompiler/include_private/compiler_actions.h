@@ -66,6 +66,10 @@ namespace Kaiju
             AST_GENERATOR_ACTION( Kaiju::Grammar::ControlFlow::foreach_stage );
             AST_GENERATOR_ACTION( Kaiju::Grammar::ControlFlow::foreach_statement );
             AST_GENERATOR_ACTION( Kaiju::Grammar::ControlFlow::while_statement );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::Operator::binary_operator );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::Operator::binary_operation );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::Operator::unary_operator );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::Operator::unary_operation );
             AST_GENERATOR_ACTION( Kaiju::Grammar::statement_inner );
             AST_GENERATOR_ACTION( Kaiju::Grammar::statement_outter );
 
