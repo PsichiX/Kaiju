@@ -54,7 +54,6 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::continue_statement, "control_flow.continue_statement", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::break_statement, "control_flow.break_statement", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::if_statement, "control_flow.if_statement", true );
-            REGISTER_TYPE( Kaiju::Grammar::ControlFlow::else_if_statement, "control_flow.else_if_statement", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::else_statement, "control_flow.else_statement", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::condition_statement, "control_flow.condition_statement", true );
             REGISTER_TYPE( Kaiju::Grammar::ControlFlow::for_stage_init, "control_flow.for_stage_init", true );

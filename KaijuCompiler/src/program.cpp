@@ -697,7 +697,67 @@ namespace Kaiju
             }
             for( auto ns : n->nodes )
             {
-
+                if( ns.type == "control_flow.if_statement" )
+                {
+                    if( !ns.hasType( "value" ) )
+                    {
+                        appendError( &ns, "Condition does not have expression!" );
+                        return;
+                    }
+                    Value* v = new Value( p, ns.findByType( "value" ) );
+                    if( !v->isValid )
+                    {
+                        appendError( v );
+                        Delete( v );
+                        return;
+                    }
+                    Block* b = 0;
+                    if( ns.hasType( "block" ) )
+                        b = new Block( p, ns.findByType( "block" ) );
+                    else if( ns.hasType( "statement_inner" ) )
+                        b = new Block( p, ns.findByType( "statement_inner" ), true );
+                    else
+                    {
+                        appendError( &ns, "Condition does not have code block!" );
+                        Delete( v );
+                        return;
+                    }
+                    if( !b->isValid )
+                    {
+                        appendError( b );
+                        Delete( b );
+                        Delete( v );
+                        return;
+                    }
+                    stages.push_back( std::make_pair( v, b ) );
+                }
+                else if( ns.type == "control_flow.else_statement" )
+                {
+                    Block* b = 0;
+                    if( ns.hasType( "block" ) )
+                        b = new Block( p, ns.findByType( "block" ) );
+                    else if( ns.hasType( "statement_inner" ) )
+                        b = new Block( p, ns.findByType( "statement_inner" ), true );
+                    else
+                    {
+                        appendError( &ns, "Condition does not have code block!" );
+                        return;
+                    }
+                    if( !b->isValid )
+                    {
+                        appendError( b );
+                        Delete( b );
+                        return;
+                    }
+                    stages.push_back( std::make_pair( (Value*)0, b ) );
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << "Unknown condition stage type: " << ns.type;
+                    appendError( &ns, ss.str() );
+                    return;
+                }
             }
             isValid = true;
         }
@@ -710,6 +770,57 @@ namespace Kaiju
                 Delete( kv.second );
             }
             stages.clear();
+        }
+
+        Program::ControlFlowReturn::ControlFlowReturn( Program* p, ASTNode* n )
+        : Convertible( p, n )
+        , value( 0 )
+        {
+            if( n->type != "control_flow.return_statement" )
+            {
+                appendError( n, "AST node is not type of control_flow.return_statement!" );
+                return;
+            }
+            if( !n->hasType( "value" ) )
+            {
+                appendError( n, "Return does not have a value!" );
+                return;
+            }
+            Value* v = new Value( p, n->findByType( "value" ) );
+            if( !v->isValid )
+            {
+                appendError( v );
+                return;
+            }
+            value = v;
+            isValid = true;
+        }
+
+        Program::ControlFlowReturn::~ControlFlowReturn()
+        {
+            Delete( value );
+        }
+
+        Program::ControlFlowContinue::ControlFlowContinue( Program* p, ASTNode* n )
+        : Convertible( p, n )
+        {
+            if( n->type != "control_flow.continue_statement" )
+            {
+                appendError( n, "AST node is not type of control_flow.continue_statement!" );
+                return;
+            }
+            isValid = true;
+        }
+
+        Program::ControlFlowBreak::ControlFlowBreak( Program* p, ASTNode* n )
+        : Convertible( p, n )
+        {
+            if( n->type != "control_flow.break_statement" )
+            {
+                appendError( n, "AST node is not type of control_flow.break_statement!" );
+                return;
+            }
+            isValid = true;
         }
 
         Program::Method::Method( Program* p, ASTNode* n )

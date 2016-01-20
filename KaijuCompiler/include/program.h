@@ -158,6 +158,35 @@ namespace Kaiju
                 std::vector< std::pair< Value*, Block* > > stages;
             };
 
+            class ControlFlowReturn : public Convertible
+            {
+            public:
+                ControlFlowReturn( Program* p, ASTNode* n );
+                virtual ~ControlFlowReturn();
+
+                bool convertToISC( std::stringstream& output ) { return false; };
+
+                Value* value;
+            };
+
+            class ControlFlowContinue : public Convertible
+            {
+            public:
+                ControlFlowContinue( Program* p, ASTNode* n );
+                virtual ~ControlFlowContinue() {};
+
+                bool convertToISC( std::stringstream& output ) { return false; };
+            };
+
+            class ControlFlowBreak : public Convertible
+            {
+            public:
+                ControlFlowBreak( Program* p, ASTNode* n );
+                virtual ~ControlFlowBreak() {};
+
+                bool convertToISC( std::stringstream& output ) { return false; };
+            };
+
             class Method : public Convertible
             {
             public:
