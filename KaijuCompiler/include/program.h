@@ -44,7 +44,7 @@ namespace Kaiju
             virtual ~Program();
 
             bool convertToPST( std::stringstream& output, int level = 0 );
-            bool convertToISC( std::stringstream& output ) { return false; };
+            bool convertToISC( std::stringstream& output );
             const std::string& constantInt( int v );
             const std::string& constantFloat( float v );
             const std::string& constantString( const std::string& v );
@@ -64,6 +64,7 @@ namespace Kaiju
             std::string* m_input;
             unsigned int m_uidGenerator;
             unsigned int m_pstUidGenerator;
+            std::string m_iscEntry;
 
         public:
             class Directive : public Convertible

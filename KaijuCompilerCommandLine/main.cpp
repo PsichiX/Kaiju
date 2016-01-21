@@ -172,7 +172,7 @@ int main( int argc, char** argv )
                     Kaiju::Compiler::convertASTNodeToIRVT( ast, outputContent );
                     ast.clear();
                 }
-                else if( /*outputFormat == F_ISC ||*/ outputFormat == F_PST )
+                else if( outputFormat == F_PST || outputFormat == F_ISC )
                 {
                     stop = clock();
                     dt = stop - start;
@@ -182,7 +182,7 @@ int main( int argc, char** argv )
                     if( !silent )
                     {
                         std::cout << "Done! Time consumed by processing: " << (int)dtms << "ms (" << dts << "s)" << std::endl;
-                        std::cout << "Processing ISC..." << std::endl;
+                        std::cout << "Processing AST..." << std::endl;
                     }
                     Kaiju::Compiler::Program program( &ast, inputContent );
                     stop = clock();
@@ -202,17 +202,17 @@ int main( int argc, char** argv )
                         return EXIT_FAILURE;
                     }
                     start = clock();
-                    /*if( outputFormat == F_ISC )
-                    {
-                        if( !silent )
-                            std::cout << "Producing ISC..." << std::endl;
-                        program.convertToISC( outputContent );
-                    }
-                    else*/ if( outputFormat == F_PST )
+                    if( outputFormat == F_PST )
                     {
                         if( !silent )
                             std::cout << "Producing PST..." << std::endl;
                         program.convertToPST( outputContent );
+                    }
+                    else if( outputFormat == F_ISC )
+                    {
+                        if( !silent )
+                            std::cout << "Producing ISC..." << std::endl;
+                        program.convertToISC( outputContent );
                     }
                 }
                 else

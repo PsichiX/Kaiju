@@ -95,6 +95,7 @@ namespace Kaiju
             m_input = 0;
             m_uidGenerator = 0;
             m_pstUidGenerator = 0;
+            m_iscEntry.clear();
         }
 
         bool Program::convertToPST( std::stringstream& output, int level )
@@ -120,6 +121,41 @@ namespace Kaiju
             output << "[" << nextUIDpst() << "]" << lvl << "-(classes)" << std::endl;
             for( auto& kv : classes )
                 kv.second->convertToPST( output, level + 2 );
+            return true;
+        }
+
+        bool Program::convertToISC( std::stringstream& output )
+        {
+            m_iscEntry.clear();
+            output << "#!/usr/bin/env intuicio" << std::endl;
+            output << "!intuicio" << std::endl;
+            output << "!stack " << stackSize << std::endl;
+            output << "!registers-i " << registersI << std::endl;
+            output << "!registers-f " << registersF << std::endl;
+            for( auto& kv : constInts )
+                output << "!data int " << kv.second << " " << kv.first << std::endl;
+            for( auto& kv : constFloats )
+                output << "!data float " << kv.second << " " << kv.first << std::endl;
+            for( auto& kv : constStrings )
+                output << "!data bytes " << kv.second << " \"" << kv.first << "\", 0" << std::endl;
+            output << "!start" << std::endl;
+            output << "goto @____APP_ENTRY____" << std::endl;
+            output << "!exit" << std::endl;
+            // TODO: statements here?
+            for( auto& kv : classes )
+                kv.second->convertToISC( output );
+            output << "!start" << std::endl;
+            if( m_iscEntry.empty() )
+                output << "!jump ____APP_ENTRY____" << std::endl;
+            else
+            {
+                output << "!jump ____APP_ENTRY____" << std::endl;
+                // TODO: convert program arguments to array and push on stack.
+                output << "call @" << m_iscEntry << std::endl;
+                // TODO: pop returned value from stack and set it as application exit code.
+                output << "!exit" << std::endl;
+            }
+            output << "!exit" << std::endl;
             return true;
         }
 
