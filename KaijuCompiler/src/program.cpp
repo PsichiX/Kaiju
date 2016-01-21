@@ -14,11 +14,15 @@ namespace Kaiju
                 m_errors << "[]" << std::endl << message << std::endl << std::endl;
         }
 
-        Program::Program( ASTNode* node, const std::string& input )
+        unsigned int Program::s_uidGenerator = 0;
+
+        Program::Program( ASTNode* node, const std::string& input, ContentLoader* contentLoader )
         : Convertible( "program", this, node )
         , stackSize( 8 * 1024 )
         , registersI( 8 )
         , registersF( 8 )
+        , m_uid( s_uidGenerator++ )
+        , m_contentLoader( contentLoader )
         , m_input( (std::string*)&input )
         , m_uidGenerator( 0 )
         , m_pstUidGenerator( 0 )
@@ -74,7 +78,28 @@ namespace Kaiju
                     return;
                 }
             }
+            size_t f = entryPoint.find( '.' );
+            if( f >= 0 )
+            {
+                std::string cn = entryPoint.substr( 0, f );
+                std::string mn = entryPoint.substr( f + 1 );
+                if( !classes.count( cn ) )
+                {
+                    std::stringstream ss;
+                    ss << "Entry point class does not exists: " << cn;
+                    appendError( 0, ss.str() );
+                    return;
+                }
+                if( !classes[ cn ]->methods.count( mn ) )
+                {
+                    std::stringstream ss;
+                    ss << "Entry point method of class: " << cn << " does not exists: " << mn;
+                    appendError( 0, ss.str() );
+                    return;
+                }
+            }
             isValid = true;
+            m_contentLoader = 0;
             m_input = 0;
         }
 
@@ -92,10 +117,11 @@ namespace Kaiju
             for( auto s : statements )
                 Delete( s );
             statements.clear();
+            m_contentLoader = 0;
             m_input = 0;
             m_uidGenerator = 0;
             m_pstUidGenerator = 0;
-            m_iscEntry.clear();
+            entryPoint.clear();
         }
 
         bool Program::convertToPST( std::stringstream& output, int level )
@@ -126,7 +152,6 @@ namespace Kaiju
 
         bool Program::convertToISC( std::stringstream& output )
         {
-            m_iscEntry.clear();
             output << "#!/usr/bin/env intuicio" << std::endl;
             output << "!intuicio" << std::endl;
             output << "!stack " << stackSize << std::endl;
@@ -144,29 +169,16 @@ namespace Kaiju
             output << "goto @___CODE_%_goto_%" << std::endl;
             output << "#increment _goto_" << std::endl;
             output << "!exit" << std::endl;
-            for( auto s : statements )
-            {
-                if( s->getType() == "directive" )
-                {
-                    Directive* d = (Directive*)s;
-                    if( d->id == "entry" && d->arguments.size() == 1 && d->arguments[ 0 ]->type == Value::T_STRING )
-                        m_iscEntry = program->constantStringValue( d->arguments[ 0 ]->id );
-                    else
-                        s->convertToISC( output );
-                }
-                else
-                    s->convertToISC( output );
-            }
             for( auto& kv : classes )
                 kv.second->convertToISC( output );
             output << "!start" << std::endl;
             output << "!jump ___CODE_%_jump_%" << std::endl;
             output << "#increment _jump_" << std::endl;
-            if( !m_iscEntry.empty() )
+            if( !entryPoint.empty() )
             {
                 // TODO: convert program arguments to array and push on stack (external data/stack).
-                size_t f = m_iscEntry.find( '.' );
-                output << "call @" << (f < 0 ? m_iscEntry : m_iscEntry.substr( 0, f ) + "/" + m_iscEntry.substr( f + 1 )) << std::endl;
+                size_t f = entryPoint.find( '.' );
+                output << "call @" << (f < 0 ? entryPoint : entryPoint.substr( 0, f ) + "/" + entryPoint.substr( f + 1 )) << std::endl;
                 // TODO: pop returned value from stack and set it as application exit code (external data/stack).
             }
             output << "!exit" << std::endl;
@@ -178,7 +190,7 @@ namespace Kaiju
             if( !constInts.count( v ) )
             {
                 std::stringstream ss;
-                ss << "__COSTANT_INT_" << (m_uidGenerator++);
+                ss << "__COSTANT_INT_" << m_uid << "_" << (m_uidGenerator++);
                 constInts[ v ] = ss.str();
             }
             return constInts[ v ];
@@ -189,7 +201,7 @@ namespace Kaiju
             if( !constFloats.count( v ) )
             {
                 std::stringstream ss;
-                ss << "__COSTANT_FLOAT_" << (m_uidGenerator++);
+                ss << "__COSTANT_FLOAT_" << m_uid << "_" << (m_uidGenerator++);
                 constFloats[ v ] = ss.str();
             }
             return constFloats[ v ];
@@ -201,7 +213,7 @@ namespace Kaiju
             if( !constStrings.count( s ) )
             {
                 std::stringstream ss;
-                ss << "__COSTANT_STRING_" << (m_uidGenerator++);
+                ss << "__COSTANT_STRING_" << m_uid << "_" << (m_uidGenerator++);
                 constStrings[ s ] = ss.str();
             }
             return constStrings[ s ];
@@ -230,6 +242,22 @@ namespace Kaiju
                     return kv.first;
             return "";
         };
+
+        bool Program::loadContent( const std::string& path )
+        {
+            if( !m_contentLoader )
+                return false;
+            Program* p = m_contentLoader->onContentLoad( path );
+            if( !p )
+                return false;
+            return this->mergeWith( p );
+        }
+
+        bool Program::mergeWith( Program* p )
+        {
+            // TODO: merge programs.
+            return false;
+        }
 
         Program::Directive::Directive( Program* p, ASTNode* n )
         : Convertible( "directive", p, n )
@@ -265,6 +293,51 @@ namespace Kaiju
                     }
                     arguments.push_back( v );
                 }
+            }
+            if( id == "entry" )
+            {
+                if( !program->entryPoint.empty() )
+                {
+                    appendError( n, "Program already have entry point defined!" );
+                    return;
+                }
+                if( arguments.size() != 1 )
+                {
+                    appendError( n, "Entry point directive does not have exactly one argument!" );
+                    return;
+                }
+                if( arguments[ 0 ]->type != Value::T_STRING )
+                {
+                    appendError( n, "Entry point directive first argument is not type of string!" );
+                    return;
+                }
+                p->entryPoint = program->constantStringValue( arguments[ 0 ]->id );
+            }
+            else if( id == "use" )
+            {
+                if( arguments.size() != 1 )
+                {
+                    appendError( n, "Entry point directive does not have exactly one argument!" );
+                    return;
+                }
+                if( arguments[ 0 ]->type != Value::T_STRING )
+                {
+                    appendError( n, "Entry point directive first argument is not type of string!" );
+                    return;
+                }
+                std::string path = program->constantStringValue( arguments[ 0 ]->id );
+                if( !program->loadContent( path ) )
+                {
+                    std::stringstream ss;
+                    ss << "Cannot load program file content from path: " << path;
+                    appendError( n, ss.str() );
+                    return;
+                }
+            }
+            else
+            {
+                appendError( n, "Unknown directive!" );
+                return;
             }
             isValid = true;
         }

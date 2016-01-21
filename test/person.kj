@@ -1,0 +1,17 @@
+# Person
+{
+	$ name = "";
+	$ age = 0;
+
+	@ constructor(n, a)
+	{
+		name = n;
+		age = a;
+	}
+
+	@ destructor()
+	{
+		name = null;
+		age = null;
+	}
+}

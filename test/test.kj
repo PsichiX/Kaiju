@@ -2,6 +2,8 @@
 
 % entry("Program.Main")
 
+% use("person.kj")
+
 # Program
 {
 	~$ a = 1;

@@ -12,6 +12,12 @@ namespace Kaiju
 
         class Program;
 
+        class ContentLoader
+        {
+        public:
+            virtual Program* onContentLoad( const std::string& path ) = 0;
+        };
+
         class Convertible
         {
         public:
@@ -42,11 +48,12 @@ namespace Kaiju
             class Class;
             class Value;
 
-            Program( ASTNode* node, const std::string& input );
+            Program( ASTNode* node, const std::string& input, ContentLoader* contentLoader = 0 );
             virtual ~Program();
 
             bool convertToPST( std::stringstream& output, int level = 0 );
             bool convertToISC( std::stringstream& output );
+            unsigned int getUID() { return m_uid; };
             const std::string& constantInt( int v );
             const std::string& constantFloat( float v );
             const std::string& constantString( const std::string& v );
@@ -55,6 +62,8 @@ namespace Kaiju
             std::string constantStringValue( const std::string& id );
             unsigned int nextUIDpst() { return m_pstUidGenerator++; };
             std::string subInput(size_t start, size_t length) { return m_input ? m_input->substr(start, length) : ""; };
+            bool loadContent( const std::string& path );
+            bool mergeWith( Program* p );
 
             unsigned int stackSize;
             unsigned int registersI;
@@ -64,12 +73,16 @@ namespace Kaiju
             std::map< std::string, std::string > constStrings;
             std::map< std::string, Class* > classes;
             std::vector< Convertible* > statements;
+            std::string entryPoint;
 
         private:
+            static unsigned int s_uidGenerator;
+
+            unsigned int m_uid;
+            ContentLoader* m_contentLoader;
             std::string* m_input;
             unsigned int m_uidGenerator;
             unsigned int m_pstUidGenerator;
-            std::string m_iscEntry;
 
         public:
             class Directive : public Convertible
