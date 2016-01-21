@@ -15,13 +15,14 @@ namespace Kaiju
         class Convertible
         {
         public:
-            Convertible( Program* p, ASTNode* n ) : program( p ), isValid( false ) {};
+            Convertible( const std::string& t, Program* p, ASTNode* n ) : program( p ), isValid( false ), m_type( t ) {};
             virtual ~Convertible() { program = 0; isValid = false; };
 
             virtual bool convertToPST( std::stringstream& output, int level = 0 ) = 0;
             virtual bool convertToISC( std::stringstream& output ) = 0;
             std::string getErrors() { return m_errors.str(); };
             bool hasErrors() { return m_errors.rdbuf()->in_avail() != 0; };
+            const std::string& getType() { return m_type; };
 
             Program* program;
             bool isValid;
@@ -31,6 +32,7 @@ namespace Kaiju
             void appendError( Convertible* c ) { if( c ) m_errors << c->m_errors.str(); };
 
         private:
+            std::string m_type;
             std::stringstream m_errors;
         };
 
@@ -48,6 +50,9 @@ namespace Kaiju
             const std::string& constantInt( int v );
             const std::string& constantFloat( float v );
             const std::string& constantString( const std::string& v );
+            int constantIntValue( const std::string& id );
+            float constantFloatValue( const std::string& id );
+            std::string constantStringValue( const std::string& id );
             unsigned int nextUIDpst() { return m_pstUidGenerator++; };
             std::string subInput(size_t start, size_t length) { return m_input ? m_input->substr(start, length) : ""; };
 
@@ -309,7 +314,7 @@ namespace Kaiju
                 virtual ~Class();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
 
                 std::string id;
                 std::string inheritance;

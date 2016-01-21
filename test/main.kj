@@ -1,5 +1,8 @@
 #!/usr/bin/env kaiju
 
+// use directive (%) to tell compiler that #Program~@Main is program entry.
+% entry("Program.Main")
+
 // use directive (%) to tell compiler to use Std class.
 % use("Std.kj")
 % use("Math.kj")

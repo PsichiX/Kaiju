@@ -15,7 +15,7 @@ namespace Kaiju
         }
 
         Program::Program( ASTNode* node, const std::string& input )
-        : Convertible( this, node )
+        : Convertible( "program", this, node )
         , stackSize( 8 * 1024 )
         , registersI( 8 )
         , registersF( 8 )
@@ -117,7 +117,7 @@ namespace Kaiju
                 output << "[" << nextUIDpst() << "]" << lvl << "--(" << kv.second << ")" << kv.first << std::endl;
             output << "[" << nextUIDpst() << "]" << lvl << "-(statements)" << std::endl;
             for( auto s : statements )
-                s->convertToPST( output, level + 1 );
+                s->convertToPST( output, level + 2 );
             output << "[" << nextUIDpst() << "]" << lvl << "-(classes)" << std::endl;
             for( auto& kv : classes )
                 kv.second->convertToPST( output, level + 2 );
@@ -139,21 +139,35 @@ namespace Kaiju
             for( auto& kv : constStrings )
                 output << "!data bytes " << kv.second << " \"" << kv.first << "\", 0" << std::endl;
             output << "!start" << std::endl;
-            output << "goto @____APP_ENTRY____" << std::endl;
+            output << "#counter _jump_ 0" << std::endl;
+            output << "#counter _goto_ 0" << std::endl;
+            output << "goto @___CODE_%_goto_%" << std::endl;
+            output << "#increment _goto_" << std::endl;
             output << "!exit" << std::endl;
-            // TODO: statements here?
+            for( auto s : statements )
+            {
+                if( s->getType() == "directive" )
+                {
+                    Directive* d = (Directive*)s;
+                    if( d->id == "entry" && d->arguments.size() == 1 && d->arguments[ 0 ]->type == Value::T_STRING )
+                        m_iscEntry = program->constantStringValue( d->arguments[ 0 ]->id );
+                    else
+                        s->convertToISC( output );
+                }
+                else
+                    s->convertToISC( output );
+            }
             for( auto& kv : classes )
                 kv.second->convertToISC( output );
             output << "!start" << std::endl;
-            if( m_iscEntry.empty() )
-                output << "!jump ____APP_ENTRY____" << std::endl;
-            else
+            output << "!jump ___CODE_%_jump_%" << std::endl;
+            output << "#increment _jump_" << std::endl;
+            if( !m_iscEntry.empty() )
             {
-                output << "!jump ____APP_ENTRY____" << std::endl;
-                // TODO: convert program arguments to array and push on stack.
-                output << "call @" << m_iscEntry << std::endl;
-                // TODO: pop returned value from stack and set it as application exit code.
-                output << "!exit" << std::endl;
+                // TODO: convert program arguments to array and push on stack (external data/stack).
+                size_t f = m_iscEntry.find( '.' );
+                output << "call @" << (f < 0 ? m_iscEntry : m_iscEntry.substr( 0, f ) + "/" + m_iscEntry.substr( f + 1 )) << std::endl;
+                // TODO: pop returned value from stack and set it as application exit code (external data/stack).
             }
             output << "!exit" << std::endl;
             return true;
@@ -193,8 +207,32 @@ namespace Kaiju
             return constStrings[ s ];
         }
 
+        int Program::constantIntValue( const std::string& id )
+        {
+            for( auto& kv : constInts )
+                if( kv.second == id )
+                    return kv.first;
+            return 0;
+        };
+
+        float Program::constantFloatValue( const std::string& id )
+        {
+            for( auto& kv : constFloats )
+                if( kv.second == id )
+                    return kv.first;
+            return 0;
+        };
+
+        std::string Program::constantStringValue( const std::string& id )
+        {
+            for( auto& kv : constStrings )
+                if( kv.second == id )
+                    return kv.first;
+            return "";
+        };
+
         Program::Directive::Directive( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "directive", p, n )
         {
             if( n->type != "directive.statement" )
             {
@@ -208,9 +246,9 @@ namespace Kaiju
             }
             ASTNode* nid = n->findByType( "identifier" );
             id = nid->value;
-            if( n->hasType( "directive.arguments_list" ) )
+            if( n->hasType( "directive.argument_list" ) )
             {
-                ASTNode* nal = n->findByType( "directive.arguments_list" );
+                ASTNode* nal = n->findByType( "directive.argument_list" );
                 for( auto nala : nal->nodes )
                 {
                     if( nala.type != "value" )
@@ -249,7 +287,7 @@ namespace Kaiju
         }
 
         Program::Variable::Variable( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "variable", p, n )
         , type( T_UNDEFINED )
         , isStatic( false )
         , valueL( 0 )
@@ -397,7 +435,7 @@ namespace Kaiju
         }
 
         Program::Block::Block( Program* p, ASTNode* n, bool oneStatement )
-        : Convertible( p, n )
+        : Convertible( "block", p, n )
         {
             if( oneStatement )
             {
@@ -621,7 +659,7 @@ namespace Kaiju
         }
 
         Program::ObjectDestruction::ObjectDestruction( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "objectDestruction", p, n )
         , value( 0 )
         {
             if( n->type != "object_destroy_statement" )
@@ -653,13 +691,13 @@ namespace Kaiju
         bool Program::ObjectDestruction::convertToPST( std::stringstream& output, int level )
         {
             std::string lvl( level, '-' );
-            output << "[" << program->nextUIDpst() << "]" << lvl << "(object_destruction)" << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(objectDestruction)" << std::endl;
             value->convertToPST( output, level + 1 );
             return true;
         }
 
         Program::ControlFlowWhileLoop::ControlFlowWhileLoop( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "whileLoop", p, n )
         , condition( 0 )
         , statements( 0 )
         {
@@ -727,7 +765,7 @@ namespace Kaiju
         }
 
         Program::ControlFlowForLoop::ControlFlowForLoop( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "forLoop", p, n )
         , init( 0 )
         , condition( 0 )
         , iteration( 0 )
@@ -854,7 +892,7 @@ namespace Kaiju
         }
 
         Program::ControlFlowForeachLoop::ControlFlowForeachLoop( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "foreachLoop", p, n )
         , collection( 0 )
         , statements( 0 )
         {
@@ -937,7 +975,7 @@ namespace Kaiju
         }
 
         Program::ControlFlowCondition::ControlFlowCondition( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "condition", p, n )
         {
             if( n->type != "control_flow.condition_statement" )
             {
@@ -1037,7 +1075,7 @@ namespace Kaiju
         }
 
         Program::ControlFlowReturn::ControlFlowReturn( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "return", p, n )
         , value( 0 )
         {
             if( n->type != "control_flow.return_statement" )
@@ -1073,7 +1111,7 @@ namespace Kaiju
         }
 
         Program::ControlFlowContinue::ControlFlowContinue( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "continue", p, n )
         {
             if( n->type != "control_flow.continue_statement" )
             {
@@ -1091,7 +1129,7 @@ namespace Kaiju
         }
 
         Program::ControlFlowBreak::ControlFlowBreak( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "break", p, n )
         {
             if( n->type != "control_flow.break_statement" )
             {
@@ -1109,7 +1147,7 @@ namespace Kaiju
         }
 
         Program::BinaryOperation::BinaryOperation( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "binaryOperation", p, n )
         , valueL( 0 )
         , valueR( 0 )
         {
@@ -1170,7 +1208,7 @@ namespace Kaiju
         }
 
         Program::UnaryOperation::UnaryOperation( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "unaryOperation", p, n )
         , value( 0 )
         {
             if( n->type != "operator.unary_operation" )
@@ -1215,7 +1253,7 @@ namespace Kaiju
         }
 
         Program::Method::Method( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "method", p, n )
         , isStatic( false )
         , statements( 0 )
         {
@@ -1249,7 +1287,7 @@ namespace Kaiju
                 return;
             }
             ASTNode* nid = n->findByType( "identifier" );
-            id = nid->value + "__";
+            id = nid->value;
             ASTNode* nal = n->findByType( "class.method.definition.argument_list" );
             for( auto nala : nal->nodes )
             {
@@ -1261,7 +1299,6 @@ namespace Kaiju
                     return;
                 }
             }
-            id += std::to_string( arguments.size() );
             Block* b = new Block( p, n->findByType( "block" ) );
             if( !b->isValid )
             {
@@ -1293,7 +1330,7 @@ namespace Kaiju
         }
 
         Program::Method::Call::Call( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "methodCall", p, n )
         {
             if( n->type != "class.method.call" )
             {
@@ -1350,7 +1387,7 @@ namespace Kaiju
         bool Program::Method::Call::convertToPST( std::stringstream& output, int level )
         {
             std::string lvl( level, '-' );
-            output << "[" << program->nextUIDpst() << "]" << lvl << "(method_call)" << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(methodCall)" << std::endl;
             output << "[" << program->nextUIDpst() << "]" << lvl << "-(identifierPath)" << std::endl;
             for( auto i : identifier )
                 output << "[" << program->nextUIDpst() << "]" << lvl << "--(identifier)" << i << std::endl;
@@ -1361,7 +1398,7 @@ namespace Kaiju
         }
 
         Program::Value::Value( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "value", p, n )
         , type( T_UNDEFINED )
         , data( 0 )
         , accessValue( 0 )
@@ -1528,7 +1565,7 @@ namespace Kaiju
         }
 
         Program::Class::Class( Program* p, ASTNode* n )
-        : Convertible( p, n )
+        : Convertible( "class", p, n )
         {
             if( n->type != "class.definition_statement" )
             {
@@ -1631,6 +1668,65 @@ namespace Kaiju
             output << "[" << program->nextUIDpst() << "]" << lvl << "-(methods)" << std::endl;
             for( auto& kv : methods )
                 kv.second->convertToPST( output, level + 2 );
+            return true;
+        }
+
+        bool Program::Class::convertToISC( std::stringstream& output )
+        {
+            output << "!namespace " << id << std::endl;
+            output << "!data bytes ___CLASS_NAME \"" << id << "\", 0" << std::endl;
+            output << "!data int ___CLASS_NAMELEN " << (id.length() + 1) << std::endl;
+            for( auto& kv : fields )
+            {
+                output << "!data bytes ___FIELD_NAME_" << kv.first << " \"" << kv.first << "\", 0" << std::endl;
+                output << "!data int ___FIELD_NAMELEN_" << kv.first << " " << (kv.first.length() + 1) << std::endl;
+            }
+            for( auto& kv : methods )
+            {
+                output << "!data bytes ___METHOD_NAME_" << kv.first << " \"" << kv.first << "\", 0" << std::endl;
+                output << "!data int ___METHOD_NAMELEN_" << kv.first << " " << (kv.first.length() + 1) << std::endl;
+            }
+            output << "!struct-def ___FieldMetaInfo" << std::endl;
+            output << "!field byte ___name 128" << std::endl;
+            output << "!field int ___namelen 1" << std::endl;
+            output << "!field int ___uid 1" << std::endl;
+            output << "!field int ___static 1" << std::endl;
+            output << "!field address ___owner 1" << std::endl;
+            output << "!struct-end" << std::endl;
+            output << "!struct-def ___MethodMetaInfo" << std::endl;
+            output << "!field byte ___name 128" << std::endl;
+            output << "!field int ___namelen 1" << std::endl;
+            output << "!field int ___uid 1" << std::endl;
+            output << "!field int ___static 1" << std::endl;
+            output << "!field address ___owner 1" << std::endl;
+            output << "!struct-end" << std::endl;
+            output << "!struct-def ___ClassMetaInfo" << std::endl;
+            output << "!field byte ___name 128" << std::endl;
+            output << "!field int ___namelen 1" << std::endl;
+            output << "!field int ___uid 1" << std::endl;
+            output << "!field " << id << "/___FieldMetaInfo ___fields " << fields.size() << std::endl;
+            output << "!field " << id << "/___MethodMetaInfo ___methods " << methods.size() << std::endl;
+            output << "!struct-end" << std::endl;
+            output << "!struct-def ___Class" << std::endl;
+            output << "!field address ___class 1" << std::endl;
+            for( auto& kv : fields )
+                output << "!field address " << kv.first << " 1" << std::endl;
+            output << "!struct-end" << std::endl;
+            output << "!data address ___type 0" << std::endl;
+            output << "!start" << std::endl;
+            output << "!namespace-end" << std::endl;
+            output << "!jump ___CODE_%_jump_%" << std::endl;
+            output << "#increment _jump_" << std::endl;
+            output << "!namespace " << id << std::endl;
+            output << "!data int ___count 1" << std::endl;
+            output << "movi regi:0 $" << id << "/___count" << std::endl;
+            output << "new $" << id << "/___type " << id << "/___ClassMetaInfo 0" << std::endl;
+            output << "movi regi:0 $" << id << "/___CLASS_NAMELEN" << std::endl;
+            output << "mov :$" << id << "/___type->" << id << "/___ClassMetaInfo.___name $" << id << "/___CLASS_NAME byte 0" << std::endl;
+            output << "!namespace-end" << std::endl;
+            output << "goto @___CODE_%_goto_%" << std::endl;
+            output << "#increment _goto_" << std::endl;
+            output << "!exit" << std::endl;
             return true;
         }
     }
