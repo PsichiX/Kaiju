@@ -1,17 +1,16 @@
 #!/usr/bin/env kaiju
 
-% entry("Program.Main")
-
+//% entry("Program.Main")
 % use("person.kj")
 
-# Program
+# Program : Person
 {
 	~$ a = 1;
 	$ b = 2;
 
 	~@ Main()
 	{
-		$c = {a + b};
+		//$c = {a + b};
 	}
 
 	@ Nothing() {}

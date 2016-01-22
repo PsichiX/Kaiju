@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "../include/program.h"
 #include "../include/std_extension.h"
 
@@ -11,7 +12,7 @@ namespace Kaiju
                 m_errors << "[" << node->line << "(" << node->column << "):" << node->position << "-" << (node->position + node->size) << "]" << std::endl
                 << message << std::endl << std::endl << program->subInput(node->position, node->size) << std::endl << std::endl;
             else
-                m_errors << "[]" << std::endl << message << std::endl << std::endl;
+                m_errors << message << std::endl << std::endl;
         }
 
         unsigned int Program::s_uidGenerator = 0;
@@ -33,7 +34,8 @@ namespace Kaiju
                 {
                     if( sn.hasType( "directive.statement" ) )
                     {
-                        Directive* d = new Directive( this, sn.findByType( "directive.statement" ) );
+                        ASTNode* nd = sn.findByType( "directive.statement" );
+                        Directive* d = new Directive( this, nd );
                         if( !d->isValid )
                         {
                             appendError( d );
@@ -41,7 +43,17 @@ namespace Kaiju
                             m_input = 0;
                             return;
                         }
-                        statements.push_back( d );
+                        if( d->id != "entry" &&
+                            d->id != "use" )
+                        {
+                            std::stringstream ss;
+                            ss << "Unexpected directive: " << d->id;
+                            appendError( nd, ss.str() );
+                            Delete( d );
+                            m_input = 0;
+                            return;
+                        }
+                        Delete( d );
                     }
                     else if( sn.hasType( "class.definition_statement" ) )
                     {
@@ -78,24 +90,27 @@ namespace Kaiju
                     return;
                 }
             }
-            size_t f = entryPoint.find( '.' );
-            if( f >= 0 )
+            if( !entryPoint.empty() )
             {
-                std::string cn = entryPoint.substr( 0, f );
-                std::string mn = entryPoint.substr( f + 1 );
-                if( !classes.count( cn ) )
+                size_t f = entryPoint.find( '.' );
+                if( f >= 0 )
                 {
-                    std::stringstream ss;
-                    ss << "Entry point class does not exists: " << cn;
-                    appendError( 0, ss.str() );
-                    return;
-                }
-                if( !classes[ cn ]->methods.count( mn ) )
-                {
-                    std::stringstream ss;
-                    ss << "Entry point method of class: " << cn << " does not exists: " << mn;
-                    appendError( 0, ss.str() );
-                    return;
+                    std::string cn = entryPoint.substr( 0, f );
+                    std::string mn = entryPoint.substr( f + 1 );
+                    if( !classes.count( cn ) )
+                    {
+                        std::stringstream ss;
+                        ss << "Entry point class does not exists: " << cn;
+                        appendError( 0, ss.str() );
+                        return;
+                    }
+                    if( !classes[ cn ]->methods.count( mn ) )
+                    {
+                        std::stringstream ss;
+                        ss << "Entry point method of class: " << cn << " does not exists: " << mn;
+                        appendError( 0, ss.str() );
+                        return;
+                    }
                 }
             }
             isValid = true;
@@ -114,9 +129,6 @@ namespace Kaiju
             for( auto& kv : classes )
                 Delete( kv.second );
             classes.clear();
-            for( auto s : statements )
-                Delete( s );
-            statements.clear();
             m_contentLoader = 0;
             m_input = 0;
             m_uidGenerator = 0;
@@ -141,9 +153,6 @@ namespace Kaiju
             output << "[" << nextUIDpst() << "]" << lvl << "-(constStrings)" << std::endl;
             for( auto& kv : constStrings )
                 output << "[" << nextUIDpst() << "]" << lvl << "--(" << kv.second << ")" << kv.first << std::endl;
-            output << "[" << nextUIDpst() << "]" << lvl << "-(statements)" << std::endl;
-            for( auto s : statements )
-                s->convertToPST( output, level + 2 );
             output << "[" << nextUIDpst() << "]" << lvl << "-(classes)" << std::endl;
             for( auto& kv : classes )
                 kv.second->convertToPST( output, level + 2 );
@@ -163,6 +172,8 @@ namespace Kaiju
                 output << "!data float " << kv.second << " " << kv.first << std::endl;
             for( auto& kv : constStrings )
                 output << "!data bytes " << kv.second << " \"" << kv.first << "\", 0" << std::endl;
+            for( auto& kv : classes )
+                output << "!data address " << kv.first << "/type 0" << std::endl;
             output << "!start" << std::endl;
             output << "#counter _jump_ 0" << std::endl;
             output << "#counter _goto_ 0" << std::endl;
@@ -246,17 +257,94 @@ namespace Kaiju
         bool Program::loadContent( const std::string& path )
         {
             if( !m_contentLoader )
+            {
+                appendError( 0, "Content loader is not attached to compiler!" );
                 return false;
-            Program* p = m_contentLoader->onContentLoad( path );
+            }
+            std::string errors;
+            Program* p = m_contentLoader->onContentLoad( path, errors );
             if( !p )
+            {
+                appendError( 0, errors );
                 return false;
-            return this->mergeWith( p );
+            }
+            bool status = this->absorbFrom( p );
+            Delete( p );
+            return status;
         }
 
-        bool Program::mergeWith( Program* p )
+        bool Program::absorbFrom( Program* p )
         {
-            // TODO: merge programs.
-            return false;
+            if( !p )
+            {
+                appendError( 0, "There is no program data to absorb from!" );
+                return false;
+            }
+            if( !p->entryPoint.empty() )
+            {
+                appendError( 0, "Cannot absorb program data which specifies entry point!" );
+                return false;
+            }
+            if( p->stackSize > stackSize )
+                stackSize = p->stackSize;
+            if( p->registersI > registersI )
+                registersI = p->registersI;
+            if( p->registersF > registersF )
+                registersF = p->registersF;
+            for( auto& kv : p->constInts )
+            {
+                if( constInts.count( kv.first ) )
+                {
+                    std::stringstream ss;
+                    ss << "Duplicate of constant int value found during program absorbing: " << kv.second << " = " << kv.first;
+                    appendError( 0, ss.str() );
+                    return false;
+                }
+                constInts[ kv.first ] = kv.second;
+            }
+            p->constInts.clear();
+            for( auto& kv : p->constFloats )
+            {
+                if( constFloats.count( kv.first ) )
+                {
+                    std::stringstream ss;
+                    ss << "Duplicate of constant float value found during programs absorbing: " << kv.second << " = " << kv.first;
+                    appendError( 0, ss.str() );
+                    return false;
+                }
+                constFloats[ kv.first ] = kv.second;
+            }
+            p->constFloats.clear();
+            for( auto& kv : p->constStrings )
+            {
+                if( constStrings.count( kv.first ) )
+                {
+                    std::stringstream ss;
+                    ss << "Duplicate of constant string value found during programs absorbing: " << kv.second << " = " << kv.first;
+                    appendError( 0, ss.str() );
+                    return false;
+                }
+                constStrings[ kv.first ] = kv.second;
+            }
+            p->constStrings.clear();
+            for( auto& kv : p->classes )
+            {
+                if( classes.count( kv.first ) )
+                {
+                    std::stringstream ss;
+                    ss << "Duplicate of class found during programs absorbing: " << kv.first;
+                    appendError( 0, ss.str() );
+                    return false;
+                }
+                classes[ kv.first ] = kv.second;
+            }
+            p->classes.clear();
+            return true;
+        }
+
+        Program::Class* Program::findClass( const std::string& id )
+        {
+            return classes.count( id ) ? classes[ id ] : 0;
         }
 
         Program::Directive::Directive( Program* p, ASTNode* n )
@@ -604,13 +692,16 @@ namespace Kaiju
                     Delete( v );
                     return false;
                 }
-                if( variables.count( v->id ) )
+                if( v->type == Variable::T_DECLARATION )
                 {
-                    appendError( nv, "Variable already declared in this scope!" );
-                    Delete( v );
-                    return false;
+                    if( variables.count( v->id ) )
+                    {
+                        appendError( nv, "Variable already declared in this scope!" );
+                        Delete( v );
+                        return false;
+                    }
+                    variables[ v->id ] = v;
                 }
-                variables[ v->id ] = v;
                 statements.push_back( v );
             }
             else if( n->hasType( "object_destroy_statement" ) )
@@ -1637,8 +1728,11 @@ namespace Kaiju
             return true;
         }
 
+        unsigned int Program::Class::s_uidGenerator = 0;
+
         Program::Class::Class( Program* p, ASTNode* n )
         : Convertible( "class", p, n )
+        , m_uid( s_uidGenerator++ )
         {
             if( n->type != "class.definition_statement" )
             {
@@ -1715,6 +1809,8 @@ namespace Kaiju
                     return;
                 }
             }
+            if( inheritance.empty() )
+                inheritance = "Object";
             isValid = true;
         }
 
@@ -1749,6 +1845,7 @@ namespace Kaiju
             output << "!namespace " << id << std::endl;
             output << "!data bytes ___CLASS_NAME \"" << id << "\", 0" << std::endl;
             output << "!data int ___CLASS_NAMELEN " << (id.length() + 1) << std::endl;
+            output << "!data int ___CLASS_UID " << m_uid << std::endl;
             for( auto& kv : fields )
             {
                 output << "!data bytes ___FIELD_NAME_" << kv.first << " \"" << kv.first << "\", 0" << std::endl;
@@ -1760,32 +1857,34 @@ namespace Kaiju
                 output << "!data int ___METHOD_NAMELEN_" << kv.first << " " << (kv.first.length() + 1) << std::endl;
             }
             output << "!struct-def ___FieldMetaInfo" << std::endl;
-            output << "!field byte ___name 128" << std::endl;
-            output << "!field int ___namelen 1" << std::endl;
-            output << "!field int ___uid 1" << std::endl;
-            output << "!field int ___static 1" << std::endl;
-            output << "!field address ___owner 1" << std::endl;
+            output << "!field byte name 128" << std::endl;
+            output << "!field int namelen 1" << std::endl;
+            output << "!field int uid 1" << std::endl;
+            output << "!field int static 1" << std::endl;
+            output << "!field address owner 1" << std::endl;
             output << "!struct-end" << std::endl;
             output << "!struct-def ___MethodMetaInfo" << std::endl;
-            output << "!field byte ___name 128" << std::endl;
-            output << "!field int ___namelen 1" << std::endl;
-            output << "!field int ___uid 1" << std::endl;
-            output << "!field int ___static 1" << std::endl;
-            output << "!field address ___owner 1" << std::endl;
+            output << "!field byte name 128" << std::endl;
+            output << "!field int namelen 1" << std::endl;
+            output << "!field int uid 1" << std::endl;
+            output << "!field int static 1" << std::endl;
+            output << "!field address owner 1" << std::endl;
             output << "!struct-end" << std::endl;
             output << "!struct-def ___ClassMetaInfo" << std::endl;
-            output << "!field byte ___name 128" << std::endl;
-            output << "!field int ___namelen 1" << std::endl;
-            output << "!field int ___uid 1" << std::endl;
-            output << "!field " << id << "/___FieldMetaInfo ___fields " << fields.size() << std::endl;
-            output << "!field " << id << "/___MethodMetaInfo ___methods " << methods.size() << std::endl;
+            output << "!field byte name 128" << std::endl;
+            output << "!field int namelen 1" << std::endl;
+            output << "!field int uid 1" << std::endl;
+            output << "!field address inheritanceMetaInfo 1" << std::endl;
+            output << "!field " << id << "/___FieldMetaInfo fields " << fields.size() << std::endl;
+            output << "!field " << id << "/___MethodMetaInfo methods " << methods.size() << std::endl;
             output << "!struct-end" << std::endl;
-            output << "!struct-def ___Class" << std::endl;
-            output << "!field address ___class 1" << std::endl;
-            for( auto& kv : fields )
-                output << "!field address " << kv.first << " 1" << std::endl;
+            output << "!struct-def ___Data" << std::endl;
+            output << "!field address ___classMetaInfo 1" << std::endl;
+            std::vector< std::string > fl;
+            getFieldsList( fl );
+            for( auto n : fl )
+                output << "!field address " << n << " 1" << std::endl;
             output << "!struct-end" << std::endl;
-            output << "!data address ___type 0" << std::endl;
             output << "!start" << std::endl;
             output << "!namespace-end" << std::endl;
             output << "!jump ___CODE_%_jump_%" << std::endl;
@@ -1793,14 +1892,26 @@ namespace Kaiju
             output << "!namespace " << id << std::endl;
             output << "!data int ___count 1" << std::endl;
             output << "movi regi:0 $" << id << "/___count" << std::endl;
-            output << "new $" << id << "/___type " << id << "/___ClassMetaInfo 0" << std::endl;
+            output << "new $" << id << "/type " << id << "/___ClassMetaInfo 0" << std::endl;
             output << "movi regi:0 $" << id << "/___CLASS_NAMELEN" << std::endl;
-            output << "mov :$" << id << "/___type->" << id << "/___ClassMetaInfo.___name $" << id << "/___CLASS_NAME byte 0" << std::endl;
+            output << "movi :$" << id << "/type->" << id << "/___ClassMetaInfo.namelen $" << id << "/___CLASS_NAMELEN" << std::endl;
+            output << "mov :$" << id << "/type->" << id << "/___ClassMetaInfo.name $" << id << "/___CLASS_NAME byte 0" << std::endl;
+            output << "movi :$" << id << "/type->" << id << "/___ClassMetaInfo.uid $" << id << "/___CLASS_UID" << std::endl;
             output << "!namespace-end" << std::endl;
             output << "goto @___CODE_%_goto_%" << std::endl;
             output << "#increment _goto_" << std::endl;
             output << "!exit" << std::endl;
             return true;
+        }
+
+        void Program::Class::getFieldsList( std::vector< std::string >& out )
+        {
+            Class* ic = program->findClass( inheritance );
+            if( ic )
+                ic->getFieldsList( out );
+            for( auto& kv : fields )
+                if( std::find( out.begin(), out.end(), kv.first ) == out.end() )
+                    out.push_back( kv.first );
         }
     }
 }

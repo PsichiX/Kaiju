@@ -15,13 +15,14 @@ namespace Kaiju
         class ContentLoader
         {
         public:
-            virtual Program* onContentLoad( const std::string& path ) = 0;
+            virtual ~ContentLoader() {};
+            virtual Program* onContentLoad( const std::string& path, std::string& errors ) = 0;
         };
 
         class Convertible
         {
         public:
-            Convertible( const std::string& t, Program* p, ASTNode* n ) : program( p ), isValid( false ), m_type( t ) {};
+            Convertible( const std::string& t, Program* p, ASTNode* n ) : isValid( false ), program( p ), m_type( t ) {};
             virtual ~Convertible() { program = 0; isValid = false; };
 
             virtual bool convertToPST( std::stringstream& output, int level = 0 ) = 0;
@@ -30,12 +31,13 @@ namespace Kaiju
             bool hasErrors() { return m_errors.rdbuf()->in_avail() != 0; };
             const std::string& getType() { return m_type; };
 
-            Program* program;
             bool isValid;
 
         protected:
             void appendError( ASTNode* node, const std::string& message );
             void appendError( Convertible* c ) { if( c ) m_errors << c->m_errors.str(); };
+
+            Program* program;
 
         private:
             std::string m_type;
@@ -63,7 +65,8 @@ namespace Kaiju
             unsigned int nextUIDpst() { return m_pstUidGenerator++; };
             std::string subInput(size_t start, size_t length) { return m_input ? m_input->substr(start, length) : ""; };
             bool loadContent( const std::string& path );
-            bool mergeWith( Program* p );
+            bool absorbFrom( Program* p );
+            Class* findClass( const std::string& id );
 
             unsigned int stackSize;
             unsigned int registersI;
@@ -72,7 +75,6 @@ namespace Kaiju
             std::map< float, std::string > constFloats;
             std::map< std::string, std::string > constStrings;
             std::map< std::string, Class* > classes;
-            std::vector< Convertible* > statements;
             std::string entryPoint;
 
         private:
@@ -328,11 +330,17 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output );
+                void getFieldsList( std::vector< std::string >& out );
 
                 std::string id;
                 std::string inheritance;
                 std::map< std::string, Variable* > fields;
                 std::map< std::string, Method* > methods;
+
+            private:
+                static unsigned int s_uidGenerator;
+
+                unsigned int m_uid;
             };
         };
     }
