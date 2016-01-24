@@ -9,7 +9,7 @@
 % use("Array.kj")
 
 // in Kaiju everything is an object of some class (#), so class is your God now.
-# Program : Object
+# Program
 {
 	// static (~) class field ($).
 	// this is equivalent to: hello = new String("Hello World!");
@@ -20,13 +20,13 @@
 	~@ Main(argv)
 	{
 		// just usual function call.
-		Std.WriteLine(hello);
+		Std.WriteLine(Program.hello);
 		
 		// declare local variables ($).
 		$ a = Int.parse(argv.Get(1));
 		$ b = Int.Parse(argv.Get(2));
 		
-		$ result = Add(a, b);
+		$ result = Program.Add(a, b);
 		// which is equivalent to:
 		result = {a + b};
 		

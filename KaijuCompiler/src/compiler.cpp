@@ -29,8 +29,8 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::number, "number", true );
             REGISTER_TYPE( Kaiju::Grammar::string, "string", false );
             REGISTER_TYPE( Kaiju::Grammar::null_value, "null_value", false );
-            REGISTER_TYPE( Kaiju::Grammar::field, "field", true );
             REGISTER_TYPE( Kaiju::Grammar::access_value, "access_value", true );
+            REGISTER_TYPE( Kaiju::Grammar::field, "field", true );
             REGISTER_TYPE( Kaiju::Grammar::value, "value", true );
             REGISTER_TYPE( Kaiju::Grammar::Variable::prefix, "variable.prefix", true );
             REGISTER_TYPE( Kaiju::Grammar::Variable::prefix_static, "variable.prefix_static", true );

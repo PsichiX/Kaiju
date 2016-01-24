@@ -54,9 +54,9 @@ namespace Kaiju
         }
         struct string : pegtl::seq< pegtl::one< '"' >, pegtl::until< pegtl::one< '"' >, String::character > > {};
         struct null_value : pegtl::string< 'n', 'u', 'l', 'l'  > {};
-        struct field : pegtl::seq< identifier, pegtl::star< identifier > > {};
         struct access_value : pegtl::seq< whitespaces_any, pegtl::one< '.' >, whitespaces_any, value > {};
-        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call, Operator::binary_operation, Operator::unary_operation, number, string, null_value, identifier >, pegtl::opt< access_value > > {};
+        struct field : pegtl::seq< identifier, whitespaces_any, pegtl::one< ':' >, whitespaces_any, identifier > {};
+        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call/*, Operator::binary_operation, Operator::unary_operation*/, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
         namespace Variable
         {
             struct prefix : pegtl::one< '$' > {};
@@ -86,7 +86,7 @@ namespace Kaiju
                     struct argument_list : pegtl::opt< value, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, value > > {};
                     struct arguments : pegtl::seq< pegtl::one< '(' >, whitespaces_any, argument_list, whitespaces_any, pegtl::one< ')' > > {};
                 }
-                struct call : pegtl::seq< field, whitespaces_any, Call::arguments > {};
+                struct call : pegtl::seq< pegtl::sor< field, identifier >, whitespaces_any, Call::arguments > {};
                 struct call_statement : pegtl::seq< call, whitespaces_any, semicolons > {};
             }
             struct prefix : pegtl::one< '#' > {};

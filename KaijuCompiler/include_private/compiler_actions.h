@@ -32,8 +32,8 @@ namespace Kaiju
             AST_GENERATOR_ACTION( Kaiju::Grammar::number );
             AST_GENERATOR_ACTION( Kaiju::Grammar::string );
             AST_GENERATOR_ACTION( Kaiju::Grammar::null_value );
-            AST_GENERATOR_ACTION( Kaiju::Grammar::field );
             AST_GENERATOR_ACTION( Kaiju::Grammar::access_value );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::field );
             AST_GENERATOR_ACTION( Kaiju::Grammar::value );
             AST_GENERATOR_ACTION( Kaiju::Grammar::Variable::prefix );
             AST_GENERATOR_ACTION( Kaiju::Grammar::Variable::prefix_static );

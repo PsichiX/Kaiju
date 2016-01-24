@@ -30,6 +30,7 @@ namespace Kaiju
             std::string getErrors() { return m_errors.str(); };
             bool hasErrors() { return m_errors.rdbuf()->in_avail() != 0; };
             const std::string& getType() { return m_type; };
+            virtual void setProgram( Program* p ) = 0;
 
             bool isValid;
 
@@ -67,6 +68,7 @@ namespace Kaiju
             bool loadContent( const std::string& path );
             bool absorbFrom( Program* p );
             Class* findClass( const std::string& id );
+            virtual void setProgram( Program* p ) {};
 
             unsigned int stackSize;
             unsigned int registersI;
@@ -95,6 +97,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p );
 
                 std::string id;
                 std::vector< Value* > arguments;
@@ -115,13 +118,20 @@ namespace Kaiju
                 virtual ~Variable();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
+                virtual void setProgram( Program* p );
+                unsigned int getUID() { return m_uid; };
 
                 Type type;
                 bool isStatic;
                 std::string id;
                 Value* valueL;
                 Value* valueR;
+
+            private:
+                static unsigned int s_uidGenerator;
+
+                unsigned int m_uid;
             };
 
             class Block : public Convertible
@@ -131,13 +141,18 @@ namespace Kaiju
                 virtual ~Block();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
+                virtual void setProgram( Program* p );
 
-                std::map< std::string, Variable* > variables;
+                std::vector< std::string > variables;
                 std::vector< Convertible* > statements;
 
             private:
+                static unsigned int s_uidGenerator;
+
                 bool processStatement( ASTNode* n );
+
+                unsigned int m_uid;
             };
 
             class ObjectDestruction : public Convertible
@@ -148,6 +163,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p );
 
                 Value* value;
             };
@@ -160,6 +176,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p );
 
                 Value* condition;
                 Block* statements;
@@ -173,6 +190,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p );
 
                 Variable* init;
                 Value* condition;
@@ -188,6 +206,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p );
 
                 std::string iteratorId;
                 Value* collection;
@@ -202,6 +221,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p );
 
                 std::vector< std::pair< Value*, Block* > > stages;
             };
@@ -214,6 +234,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p );
 
                 Value* value;
             };
@@ -226,6 +247,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p ) { program = p; };
             };
 
             class ControlFlowBreak : public Convertible
@@ -236,6 +258,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p ) { program = p; };
             };
 
             class BinaryOperation : public Convertible
@@ -246,6 +269,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p );
 
                 std::string type;
                 Value* valueL;
@@ -260,6 +284,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output ) { return false; };
+                virtual void setProgram( Program* p );
 
                 std::string type;
                 Value* value;
@@ -272,13 +297,21 @@ namespace Kaiju
                 virtual ~Method();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
+                virtual void setProgram( Program* p );
+                unsigned int getUID() { return m_uid; };
 
                 bool isStatic;
                 std::string id;
                 std::vector< std::string > arguments;
                 Block* statements;
 
+            private:
+                static unsigned int s_uidGenerator;
+
+                unsigned int m_uid;
+
+            public:
                 class Call : public Convertible
                 {
                 public:
@@ -287,8 +320,10 @@ namespace Kaiju
 
                     bool convertToPST( std::stringstream& output, int level = 0 );
                     bool convertToISC( std::stringstream& output ) { return false; };
+                    virtual void setProgram( Program* p );
 
-                    std::vector< std::string > identifier;
+                    std::string id;
+                    std::string classId;
                     std::vector< Value* > arguments;
                 };
             };
@@ -307,6 +342,7 @@ namespace Kaiju
                     T_NUMBER_FLOAT,
                     T_STRING,
                     T_NULL,
+                    T_FIELD,
                     T_IDENTIFIER
                 };
 
@@ -314,10 +350,12 @@ namespace Kaiju
                 virtual ~Value();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
+                virtual void setProgram( Program* p );
 
                 Type type;
                 std::string id;
+                std::string classId;
                 Convertible* data;
                 Value* accessValue;
             };
@@ -330,7 +368,8 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output );
-                void getFieldsList( std::vector< std::string >& out );
+                void getFieldsList( std::vector< std::string >& out, bool isStatic = false );
+                virtual void setProgram( Program* p );
 
                 std::string id;
                 std::string inheritance;
