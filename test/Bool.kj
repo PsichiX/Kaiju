@@ -1,25 +1,25 @@
-% use("Object.kj");
+#use("Object.kj");
 
-# Bool
+class Bool
 {
-	% atomField(int, ___data, 1);
+	#atomField(int, ___data, 1);
 
-	~@ True()
+	static met True()
 	{
 		return true;
 	}
 
-	~@ False()
+	static met False()
 	{
 		return false;
 	}
 
-	@ Not()
+	met Not()
 	{
-		$ result = false;
-		% inject("movi regi:0 :*$result->Bool/___Data.___data");
-		% inject("not 0 0");
-		% inject("movi :*$result->Bool/___Data.___data regi:0");
+		let result = false;
+		#inject("movi regi:0 :*$result->Bool/___Data.___data");
+		#inject("not 0 0");
+		#inject("movi :*$result->Bool/___Data.___data regi:0");
 		return result;
 	}
 }

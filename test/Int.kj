@@ -1,93 +1,93 @@
-% use("Object.kj");
+#use("Object.kj");
 
-# Int
+class Int
 {
-	% atomField(int, ___data, 1);
+	#atomField(int, ___data, 1);
 
-	@ Constructor()
+	met Constructor()
 	{
-		% inject("movi :*$this->Int/___Data.___data $___ZERO");
+		#inject("movi :*$this->Int/___Data.___data $___ZERO");
 	}
 
-	@ Destructor()
+	met Destructor()
 	{
-		% inject("movi :*$this->Int/___Data.___data $___ZERO");
+		#inject("movi :*$this->Int/___Data.___data $___ZERO");
 	}
 
-	@ Add(v)
+	met Add(v)
 	{
-		% ensureType(v, Int);
-		$ result = 0;
-		% inject("movi regi:0 :*$this->Int/___Data.___data");
-		% inject("movi regi:1 :*$v->Int/___Data.___data");
-		% inject("addi 2 0 1");
-		% inject("movi :*$result->Int/___Data.___data regi:2");
+		#ensureType(v, Int);
+		let result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("addi 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
 		return result;
 	}
 
-	@ Sub(v)
+	met Sub(v)
 	{
-		% ensureType(v, Int);
-		$ result = 0;
-		% inject("movi regi:0 :*$this->Int/___Data.___data");
-		% inject("movi regi:1 :*$v->Int/___Data.___data");
-		% inject("subi 2 0 1");
-		% inject("movi :*$result->Int/___Data.___data regi:2");
+		#ensureType(v, Int);
+		let result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("subi 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
 		return result;
 	}
 
-	@ Mul(v)
+	met Mul(v)
 	{
-		% ensureType(v, Int);
-		$ result = 0;
-		% inject("movi regi:0 :*$this->Int/___Data.___data");
-		% inject("movi regi:1 :*$v->Int/___Data.___data");
-		% inject("muli 2 0 1");
-		% inject("movi :*$result->Int/___Data.___data regi:2");
+		#ensureType(v, Int);
+		let result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("muli 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
 		return result;
 	}
 
-	@ Div(v)
+	met Div(v)
 	{
-		% ensureType(v, Int);
-		$ result = 0;
-		% inject("movi regi:0 :*$this->Int/___Data.___data");
-		% inject("movi regi:1 :*$v->Int/___Data.___data");
-		% inject("divi 2 0 1");
-		% inject("movi :*$result->Int/___Data.___data regi:2");
+		#ensureType(v, Int);
+		let result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("divi 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
 		return result;
 	}
 
-	@ GreaterThan(v)
+	met GreaterThan(v)
 	{
-		% ensureType(v, Int);
-		$ result = false;
-		% inject("movi regi:0 :*$this->Int/___Data.___data");
-		% inject("movi regi:1 :*$v->Int/___Data.___data");
-		% inject("tgti 2 0 1");
-		% inject("movi :*$result->Bool/___Data.___data regi:2");
+		#ensureType(v, Int);
+		let result = false;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("tgti 2 0 1");
+		#inject("movi :*$result->Bool/___Data.___data regi:2");
 		return result;
 	}
 
-	@ LessThan(v)
+	met LessThan(v)
 	{
-		% ensureType(v, Int);
-		$ result = false;
-		% inject("movi regi:0 :*$this->Int/___Data.___data");
-		% inject("movi regi:1 :*$v->Int/___Data.___data");
-		% inject("tlti 2 0 1");
-		% inject("movi :*$result->Bool/___Data.___data regi:2");
+		#ensureType(v, Int);
+		let result = false;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("tlti 2 0 1");
+		#inject("movi :*$result->Bool/___Data.___data regi:2");
 		return result;
 	}
 
-	@ EqualTo(v)
+	met EqualTo(v)
 	{
-		% ensureType(v, Int);
-		$ result = false;
-		% inject("movi regi:0 :*$this->Int/___Data.___data");
-		% inject("movi regi:1 :*$v->Int/___Data.___data");
-		% inject("teti 2 0 1");
-		% inject("movi :*$result->Bool/___Data.___data regi:2");
+		#ensureType(v, Int);
+		let result = false;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("teti 2 0 1");
+		#inject("movi :*$result->Bool/___Data.___data regi:2");
 		return result;
 	}
 }

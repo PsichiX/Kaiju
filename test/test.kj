@@ -1,75 +1,75 @@
 #!/usr/bin/env kaiju
 
-% entry("Program : Main");
+#entry("Program : Main");
 
-% use("Atom.kj");
-% use("Person.kj");
-% use("Std.kj");
+#use("Atom.kj");
+#use("Person.kj");
+#use("Std.kj");
 
-# Program
+class Program
 {
-	~$ a = 1;
-	~$ b = 2;
+	static let a = 1;
+	static let b = 2;
 
-	~@ Main(...)
+	static met Main(...)
 	{
-		$ c = Program:Add(Program:a, Program:b);
+		let c = Program:Add(Program:a, Program:b);
 		//Std:WriteLine(c);
-		% inject("dbgi :*$c->Int/___Data.___data");
-		% inject("dbgb $___NEW_LINE");
+		#inject("dbgi :*$c->Int/___Data.___data");
+		#inject("dbgb $___NEW_LINE");
 
-		$ p = +Person("john", c.Add(20));
+		let p = new Person("john", c.Add(20));
 		//Std:WriteLine(p.age);
-		$ tmp = p.age;
-		% inject("dbgi :*$tmp->Int/___Data.___data");
-		% inject("dbgb $___NEW_LINE");
-		-p;
+		let tmp = p.age;
+		#inject("dbgi :*$tmp->Int/___Data.___data");
+		#inject("dbgb $___NEW_LINE");
+		delete p;
 
-		% inject("dbgb $___NEW_LINE");
+		#inject("dbgb $___NEW_LINE");
 		
 		while(tmp.GreaterThan(10))
 		{
 			tmp = tmp.Sub(1);
 			//Std:WriteLine(tmp);
-			% inject("dbgi :*$tmp->Int/___Data.___data");
-			% inject("dbgb $___NEW_LINE");
+			#inject("dbgi :*$tmp->Int/___Data.___data");
+			#inject("dbgb $___NEW_LINE");
 		}
 
-		% inject("dbgb $___NEW_LINE");
+		#inject("dbgb $___NEW_LINE");
 		
-		for($ i = 0; i.LessThan(tmp); i.Add(1))
+		for(let i = 0; i.LessThan(tmp); i.Add(1))
 		{
 			//Std:WriteLine(i);
-			% inject("dbgi :*$i->Int/___Data.___data");
-			% inject("dbgb $___NEW_LINE");
+			#inject("dbgi :*$i->Int/___Data.___data");
+			#inject("dbgb $___NEW_LINE");
 		}
 
-		% inject("dbgb $___NEW_LINE");
+		#inject("dbgb $___NEW_LINE");
 		
 		if(false)
 		{
 			tmp = 0;
 			//Std:WriteLine(tmp);
-			% inject("dbgi :*$tmp->Int/___Data.___data");
-			% inject("dbgb $___NEW_LINE");
+			#inject("dbgi :*$tmp->Int/___Data.___data");
+			#inject("dbgb $___NEW_LINE");
 		}
 		else if(tmp.EqualTo(10))
 		{
 			tmp = 1;
 			//Std:WriteLine(tmp);
-			% inject("dbgi :*$tmp->Int/___Data.___data");
-			% inject("dbgb $___NEW_LINE");
+			#inject("dbgi :*$tmp->Int/___Data.___data");
+			#inject("dbgb $___NEW_LINE");
 		}
 		else
 		{
 			tmp = 2;
 			//Std:WriteLine(tmp);
-			% inject("dbgi :*$tmp->Int/___Data.___data");
-			% inject("dbgb $___NEW_LINE");
+			#inject("dbgi :*$tmp->Int/___Data.___data");
+			#inject("dbgb $___NEW_LINE");
 		}
 	}
 
-	~@ Add(a, b)
+	static met Add(a, b)
 	{
 		return a.Add(b);
 		// near future:

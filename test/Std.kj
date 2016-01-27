@@ -1,8 +1,8 @@
-% use("Atom.kj");
+#use("Atom.kj");
 
-# Std
+class Std
 {
-	~@ WriteLine(...)
+	static met WriteLine(...)
 	{
 
 	}

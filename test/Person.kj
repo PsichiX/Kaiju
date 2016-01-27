@@ -1,20 +1,20 @@
-% use("Object.kj");
+#use("Object.kj");
 
-# Person
+class Person
 {
-	$ name;
-	$ age;
+	let name;
+	let age;
 
-	@ Constructor(n, a)
+	met Constructor(n, a)
 	{
-		% ensureType(n, String);
-		% ensureType(a, Int);
+		#ensureType(n, String);
+		#ensureType(a, Int);
 
 		this.name = n;
 		this.age = a;
 	}
 
-	@ Destructor()
+	met Destructor()
 	{
 	}
 }

@@ -39,8 +39,8 @@ namespace Kaiju
         struct whitespaces_any : pegtl::star< pegtl::sor< pegtl::space, comment > > {};
         struct semicolons : pegtl::seq< pegtl::one< ';' >, pegtl::star< whitespaces_any, pegtl::one< ';' > > > {};
         struct identifier : pegtl::identifier {};
-        struct object_create : pegtl::seq< pegtl::one< '+' >, whitespaces_any, Class::Method::call > {};
-        struct object_destroy_statement : pegtl::seq< pegtl::one< '-' >, whitespaces_any, value, whitespaces_any, semicolons > {};
+        struct object_create : pegtl::seq< pegtl::string< 'n', 'e', 'w' >, whitespaces_any, Class::Method::call > {};
+        struct object_destroy_statement : pegtl::seq< pegtl::string< 'd', 'e', 'l', 'e', 't', 'e' >, whitespaces_any, value, whitespaces_any, semicolons > {};
         namespace Number
         {
             struct integer_literal : pegtl::seq< pegtl::opt< pegtl::one< '+', '-' > >, pegtl::plus< pegtl::digit > > {};
@@ -65,8 +65,8 @@ namespace Kaiju
         struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call/*, Operator::binary_operation, Operator::unary_operation*/, false_value, true_value, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
         namespace Variable
         {
-            struct prefix : pegtl::one< '$' > {};
-            struct prefix_static : pegtl::string< '~', '$' > {};
+            struct prefix : pegtl::string< 'l', 'e', 't' > {};
+            struct prefix_static : pegtl::seq< pegtl::string< 's', 't', 'a', 't', 'i', 'c' >, whitespaces_any, pegtl::string< 'l', 'e', 't' > > {};
             struct assignment;
             struct declaration : pegtl::seq< pegtl::sor< prefix, prefix_static >, whitespaces_any, identifier > {};
             struct declaration_assignment : pegtl::seq< declaration, whitespaces_any, pegtl::one< '=' >, whitespaces_any, value > {};
@@ -79,8 +79,8 @@ namespace Kaiju
         {
             namespace Method
             {
-                struct prefix : pegtl::one< '@' > {};
-                struct prefix_static : pegtl::string< '~', '@' > {};
+                struct prefix : pegtl::string< 'm', 'e', 't' > {};
+                struct prefix_static : pegtl::seq< pegtl::string< 's', 't', 'a', 't', 'i', 'c' >, whitespaces_any, pegtl::string< 'm', 'e', 't' > > {};;
                 namespace Definition
                 {
                     struct argument_list : pegtl::opt< identifier, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, identifier > > {};
@@ -96,14 +96,14 @@ namespace Kaiju
                 struct call : pegtl::seq< pegtl::sor< field, identifier >, whitespaces_any, Call::arguments > {};
                 struct call_statement : pegtl::seq< call, whitespaces_any, semicolons > {};
             }
-            struct prefix : pegtl::one< '#' > {};
+            struct prefix : pegtl::string< 'c', 'l', 'a', 's', 's' > {};
             struct inheritance : pegtl::seq< pegtl::one< ':' >, whitespaces_any, identifier > {};
             struct body : pegtl::seq< pegtl::one< '{' >, whitespaces_any, pegtl::star< pegtl::sor< Directive::statement, variable_statement, Method::definition_statement >, whitespaces_any >, pegtl::one< '}' > > {};
             struct definition_statement : pegtl::seq< prefix, whitespaces_any, identifier, pegtl::opt< whitespaces_any, inheritance >, whitespaces_any, body > {};
         }
         namespace Directive
         {
-            struct prefix : pegtl::one< '%' > {};
+            struct prefix : pegtl::one< '#' > {};
             struct argument_list : pegtl::opt< value, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, value > > {};
             struct arguments : pegtl::seq< pegtl::one< '(' >, whitespaces_any, argument_list, whitespaces_any, pegtl::one< ')' > > {};
             struct statement : pegtl::seq< prefix, whitespaces_any, identifier, pegtl::opt< whitespaces_any, arguments >, whitespaces_any, semicolons > {};
