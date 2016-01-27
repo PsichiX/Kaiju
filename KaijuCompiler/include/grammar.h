@@ -25,6 +25,10 @@ namespace Kaiju
             struct binary_operation;
             struct unary_operation;
         }
+        namespace Directive
+        {
+            struct statement;
+        }
         namespace Comment
         {
             struct inlined : pegtl::seq< pegtl::two< '/' >, pegtl::until< pegtl::eolf > > {};
@@ -91,7 +95,7 @@ namespace Kaiju
             }
             struct prefix : pegtl::one< '#' > {};
             struct inheritance : pegtl::seq< pegtl::one< ':' >, whitespaces_any, identifier > {};
-            struct body : pegtl::seq< pegtl::one< '{' >, whitespaces_any, pegtl::star< pegtl::sor< variable_statement, Method::definition_statement >, whitespaces_any >, pegtl::one< '}' > > {};
+            struct body : pegtl::seq< pegtl::one< '{' >, whitespaces_any, pegtl::star< pegtl::sor< Directive::statement, variable_statement, Method::definition_statement >, whitespaces_any >, pegtl::one< '}' > > {};
             struct definition_statement : pegtl::seq< prefix, whitespaces_any, identifier, pegtl::opt< whitespaces_any, inheritance >, whitespaces_any, body > {};
         }
         namespace Directive
@@ -99,7 +103,7 @@ namespace Kaiju
             struct prefix : pegtl::one< '%' > {};
             struct argument_list : pegtl::opt< value, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, value > > {};
             struct arguments : pegtl::seq< pegtl::one< '(' >, whitespaces_any, argument_list, whitespaces_any, pegtl::one< ')' > > {};
-            struct statement : pegtl::seq< prefix, whitespaces_any, identifier, pegtl::opt< whitespaces_any, arguments > > {};
+            struct statement : pegtl::seq< prefix, whitespaces_any, identifier, pegtl::opt< whitespaces_any, arguments >, whitespaces_any, semicolons > {};
         }
         namespace ControlFlow
         {
@@ -156,7 +160,7 @@ namespace Kaiju
             struct unary_operation : pegtl::seq< unary_operator, whitespaces_any, pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, pegtl::one< '}' > > {};
         }
         struct expression_statement : pegtl::seq< value, whitespaces_any, semicolons > {};
-        struct statement_inner : pegtl::sor< block, Directive::statement, variable_statement, object_destroy_statement, ControlFlow::while_statement, ControlFlow::for_statement, ControlFlow::foreach_statement, ControlFlow::condition_statement, ControlFlow::return_statement, ControlFlow::continue_statement, ControlFlow::break_statement, Class::Method::call_statement, expression_statement > {};
+        struct statement_inner : pegtl::sor< Directive::statement, variable_statement, object_destroy_statement, ControlFlow::while_statement, ControlFlow::for_statement, ControlFlow::foreach_statement, ControlFlow::condition_statement, ControlFlow::return_statement, ControlFlow::continue_statement, ControlFlow::break_statement, Class::Method::call_statement, expression_statement > {};
         struct statement_outter : pegtl::sor< Directive::statement, Class::definition_statement > {};
         struct statements_inner : pegtl::plus< whitespaces_any, statement_inner, whitespaces_any > {};
         struct statements_outter : pegtl::plus< whitespaces_any, statement_outter, whitespaces_any > {};

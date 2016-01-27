@@ -1,12 +1,12 @@
 #!/usr/bin/env kaiju
 
 // use directive (%) to tell compiler that #Program~@Main is program entry.
-% entry("Program.Main")
+% entry("Program.Main");
 
 // use directive (%) to tell compiler to use Std class.
-% use("Std.kj")
-% use("Math.kj")
-% use("Array.kj")
+% use("Std.kj");
+% use("Math.kj");
+% use("Array.kj");
 
 // in Kaiju everything is an object of some class (#), so class is your God now.
 # Program
@@ -68,17 +68,17 @@
 	~@ Add(a, b)
 	{
 		// make sure that arguments have proper types.
-		% ensureType(a, Int)
-		% ensureType(b, Int)
+		% ensureType(a, Int);
+		% ensureType(b, Int);
 
 		$ result = 0;
 
 		// here we inject Intuicio Assembler code.
 		// get values from managed objects to registry, perform operation and return result.
-		% inject("movi regi:0 *:$a->Int.value")
-		% inject("movi regi:1 *:$b->Int.value")
-		% inject("addi 2 0 1")
-		% inject("movi *:$result->Int.value regi:2")
+		% inject("movi regi:0 :*$a->Int.___data");
+		% inject("movi regi:1 :*$b->Int.___data");
+		% inject("addi 2 0 1");
+		% inject("movi :*$result->Int.___data regi:2");
 
 		return result;
 	}

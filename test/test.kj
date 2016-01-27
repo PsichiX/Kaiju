@@ -1,7 +1,9 @@
 #!/usr/bin/env kaiju
 
-% entry("Program.Main")
-//% use("person.kj")
+% entry("Program.Main");
+
+% use("Person.kj");
+% use("Std.kj");
 
 # Program
 {
@@ -10,12 +12,21 @@
 
 	~@ Main()
 	{
-		$c = Program:Add(Program:a, Program:b);
-		Program:a = c;
+		$ c = Program:Add(Program:a, Program:b);
+		% inject("dbgi :*$c->Int/___Data.___data");
+		% inject("dbgb $___NEW_LINE");
+
+		$ p = +Person("john", c);
+		$ tmp = p.age;
+		% inject("dbgi :*$tmp->Int/___Data.___data");
+		% inject("dbgb $___NEW_LINE");
+		-p;
 	}
 
 	~@ Add(a, b)
 	{
-		return {a + b};
+		return a.Add(b);
+		// near future:
+		//return {a + b};
 	}
 }

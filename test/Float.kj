@@ -1,0 +1,60 @@
+% use("Object.kj");
+
+# Float
+{
+	% atomField(float, ___data, 1);
+
+	@ Constructor()
+	{
+		% inject("movf :*$this->Float/___Data.___data $___ZEROF");
+	}
+
+	@ Destructor()
+	{
+		% inject("movf :*$this->Float/___Data.___data $___ZEROF");
+	}
+
+	@ Add(v)
+	{
+		% ensureType(v, Float);
+		$ result = 0.0;
+		% inject("movf regf:0 :*$this->Float/___Data.___data");
+		% inject("movf regf:1 :*$v->Float/___Data.___data");
+		% inject("addf 2 0 1");
+		% inject("movf :*$result->Float/___Data.___data regf:2");
+		return result;
+	}
+
+	@ Sub(v)
+	{
+		% ensureType(v, Float);
+		$ result = 0.0;
+		% inject("movf regf:0 :*$this->Float/___Data.___data");
+		% inject("movf regf:1 :*$v->Float/___Data.___data");
+		% inject("subf 2 0 1");
+		% inject("movf :*$result->Float/___Data.___data regf:2");
+		return result;
+	}
+
+	@ Mul(v)
+	{
+		% ensureType(v, Float);
+		$ result = 0.0;
+		% inject("movf regf:0 :*$this->Float/___Data.___data");
+		% inject("movf regf:1 :*$v->Float/___Data.___data");
+		% inject("mulf 2 0 1");
+		% inject("movf :*$result->Float/___Data.___data regf:2");
+		return result;
+	}
+
+	@ Div(v)
+	{
+		% ensureType(v, Float);
+		$ result = 0.0;
+		% inject("movf regf:0 :*$this->Float/___Data.___data");
+		% inject("movf regf:1 :*$v->Float/___Data.___data");
+		% inject("divf 2 0 1");
+		% inject("movf :*$result->Float/___Data.___data regf:2");
+		return result;
+	}
+}

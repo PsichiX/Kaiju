@@ -16,14 +16,11 @@ namespace Kaiju
                 m_errors << message << std::endl << std::endl;
         }
 
-        unsigned int Program::s_uidGenerator = 0;
-
         Program::Program( ASTNode* node, const std::string& input, ContentLoader* contentLoader )
         : Convertible( "program", this, node )
         , stackSize( 8 * 1024 )
         , registersI( 8 )
         , registersF( 8 )
-        , m_uid( s_uidGenerator++ )
         , m_contentLoader( contentLoader )
         , m_input( (std::string*)&input )
         , m_uidGenerator( 0 )
@@ -127,6 +124,7 @@ namespace Kaiju
             constInts.clear();
             constFloats.clear();
             constStrings.clear();
+            constHash.clear();
             for( auto& kv : classes )
                 Delete( kv.second );
             classes.clear();
@@ -153,6 +151,9 @@ namespace Kaiju
                 output << "[" << nextUIDpst() << "]" << lvl << "--(" << kv.second << ")" << kv.first << std::endl;
             output << "[" << nextUIDpst() << "]" << lvl << "-(constStrings)" << std::endl;
             for( auto& kv : constStrings )
+                output << "[" << nextUIDpst() << "]" << lvl << "--(" << kv.second << ")" << kv.first << std::endl;
+            output << "[" << nextUIDpst() << "]" << lvl << "-(constHash)" << std::endl;
+            for( auto& kv : constHash )
                 output << "[" << nextUIDpst() << "]" << lvl << "--(" << kv.second << ")" << kv.first << std::endl;
             output << "[" << nextUIDpst() << "]" << lvl << "-(classes)" << std::endl;
             for( auto& kv : classes )
@@ -182,8 +183,36 @@ namespace Kaiju
                 output << "!data float " << kv.second << " " << kv.first << std::endl;
             for( auto& kv : constStrings )
                 output << "!data bytes " << kv.second << " \"" << kv.first << "\", 0" << std::endl;
+            for( auto& kv : constHash )
+                output << "!data address " << kv.second << " " << kv.first << std::endl;
             for( auto& kv : classes )
                 output << "!data address " << kv.first << "/type 0" << std::endl;
+            output << "!struct-def ___FieldMetaInfo" << std::endl;
+            output << "!field byte name 128" << std::endl;
+            output << "!field int namelen 1" << std::endl;
+            output << "!field address uid 1" << std::endl;
+            output << "!field int static 1" << std::endl;
+            output << "!field int offset 1" << std::endl;
+            output << "!field address owner 1" << std::endl;
+            output << "!struct-end" << std::endl;
+            output << "!struct-def ___MethodMetaInfo" << std::endl;
+            output << "!field byte name 128" << std::endl;
+            output << "!field int namelen 1" << std::endl;
+            output << "!field address uid 1" << std::endl;
+            output << "!field int static 1" << std::endl;
+            output << "!field int address 1" << std::endl;
+            output << "!field address owner 1" << std::endl;
+            output << "!struct-end" << std::endl;
+            output << "!struct-def ___ClassMetaInfo" << std::endl;
+            output << "!field byte name 128" << std::endl;
+            output << "!field int namelen 1" << std::endl;
+            output << "!field address uid 1" << std::endl;
+            output << "!field address inheritanceMetaInfo 1" << std::endl;
+            output << "!field int fieldsCount 1" << std::endl;
+            output << "!field int methodsCount 1" << std::endl;
+            output << "!field address fields 1" << std::endl;
+            output << "!field address methods 1" << std::endl;
+            output << "!struct-end" << std::endl;
             output << "!start" << std::endl;
             output << "#counter _jump_ 0" << std::endl;
             output << "#counter _goto_ 0" << std::endl;
@@ -194,10 +223,140 @@ namespace Kaiju
             for( auto& kv : classes )
                 kv.second->convertToISC( output );
             output << "!start" << std::endl;
-            output << "!jump ___CLASSES_META_INITIALIZATION" << std::endl;
+            output << "!jump ___GET_INT_FROM_ATOM" << std::endl;
+            output << "!namespace ___funcGetIntFromAtom" << std::endl;
+            output << "!data int value 0" << std::endl;
+            output << "!data address this 0" << std::endl;
+            output << "popi $value" << std::endl;
             output << "movi regi:0 $___ONE" << std::endl;
+            output << "mobj $this" << std::endl;
+            output << "mnew $this Int/___Data 0 @Int/___Finalizer" << std::endl;
+            output << "mova :*$this->Int/___Data.___classMetaInfo $Int/type" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "call @Int/___Creator" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "pshi $" << constantInt( 0 ) << std::endl;
+            output << "call @Int/Constructor" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___valueL" << std::endl;
+            output << "mdel $___valueL" << std::endl;
+            output << "movi :*$this->Int/___Data.___data $value" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
+            output << "!jump ___GET_FLOAT_FROM_ATOM" << std::endl;
+            output << "!namespace ___funcGetFloatFromAtom" << std::endl;
+            output << "!data float value 0.0" << std::endl;
+            output << "!data address this 0" << std::endl;
+            output << "popf $value" << std::endl;
+            output << "movi regi:0 $___ONE" << std::endl;
+            output << "mobj $this" << std::endl;
+            output << "mnew $this Float/___Data 0 @Float/___Finalizer" << std::endl;
+            output << "mova :*$this->Float/___Data.___classMetaInfo $Float/type" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "call @Float/___Creator" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "pshi $" << constantInt( 0 ) << std::endl;
+            output << "call @Float/Constructor" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___valueL" << std::endl;
+            output << "mdel $___valueL" << std::endl;
+            output << "movf :*$this->Float/___Data.___data $value" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
+            output << "!jump ___GET_STRING_FROM_ATOM" << std::endl;
+            output << "!namespace ___funcGetStringFromAtom" << std::endl;
+            output << "!data address value 0" << std::endl;
+            output << "!data address this 0" << std::endl;
+            output << "popa $value" << std::endl;
+            output << "movi regi:0 $___ONE" << std::endl;
+            output << "mobj $this" << std::endl;
+            output << "mnew $this String/___Data 0 @String/___Finalizer" << std::endl;
+            output << "mova :*$this->String/___Data.___classMetaInfo $String/type" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "call @String/___Creator" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "pshi $" << constantInt( 0 ) << std::endl;
+            output << "call @String/Constructor" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___valueL" << std::endl;
+            output << "mdel $___valueL" << std::endl;
+            //output << "del :*$this->String/___Data.___data" << std::endl;
+            //output << "new :*$this->String/___Data.___data " << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
+            output << "!jump ___FIND_HASHED_METHOD_OF" << std::endl;
+            output << "!namespace ___funcFindHashedMethodOf" << std::endl;
+            output << "!data address this 0" << std::endl;
+            output << "!data address uid 0" << std::endl;
+            output << "!data address ptr 0" << std::endl;
+            output << "mpop $this" << std::endl;
+            output << "popa $uid" << std::endl;
+            output << "mova $ptr :*$this->Object/___Data.___classMetaInfo" << std::endl;
+            output << "movi regi:0 :$ptr->___ClassMetaInfo.methodsCount" << std::endl;
+            output << "mova $ptr :$ptr->___ClassMetaInfo.methods" << std::endl;
+            output << "movi regi:2 $___ONE" << std::endl;
+            output << "!jump ___begin" << std::endl;
+            output << "movi regi:1 :$ptr->___MethodMetaInfo.static" << std::endl;
+            output << "jifi 1 @___check @___nonstatic" << std::endl;
+            output << "!jump ___nonstatic" << std::endl;
+            output << "eadr 1 :$ptr->___MethodMetaInfo.uid $uid" << std::endl;
+            output << "jifi 1 @___good @___check" << std::endl;
+            output << "!jump ___good" << std::endl;
+            output << "pshi :$ptr->___MethodMetaInfo.address" << std::endl;
+            output << "ret" << std::endl;
+            output << "!jump ___check" << std::endl;
+            output << "jifi 0 @___next @___end" << std::endl;
+            output << "!jump ___next" << std::endl;
+            output << "sadr $ptr ___MethodMetaInfo 2" << std::endl;
+            output << "deci 0 0" << std::endl;
+            output << "goto @___begin" << std::endl;
+            output << "!jump ___end" << std::endl;
+            output << "pshi $___ZERO" << std::endl;
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
+            output << "!jump ___FIND_HASHED_FIELD_OF" << std::endl;
+            output << "!namespace ___funcFindHashedFieldOf" << std::endl;
+            output << "!data address this 0" << std::endl;
+            output << "!data address uid 0" << std::endl;
+            output << "!data address ptr 0" << std::endl;
+            output << "mpop $this" << std::endl;
+            output << "popa $uid" << std::endl;
+            output << "mova $ptr :*$this->Object/___Data.___classMetaInfo" << std::endl;
+            output << "movi regi:0 :$ptr->___ClassMetaInfo.fieldsCount" << std::endl;
+            output << "mova $ptr :$ptr->___ClassMetaInfo.fields" << std::endl;
+            output << "movi regi:2 $___ONE" << std::endl;
+            output << "!jump ___begin" << std::endl;
+            output << "movi regi:1 :$ptr->___FieldMetaInfo.static" << std::endl;
+            output << "jifi 1 @___check @___nonstatic" << std::endl;
+            output << "!jump ___nonstatic" << std::endl;
+            output << "eadr 1 :$ptr->___FieldMetaInfo.uid $uid" << std::endl;
+            output << "jifi 1 @___good @___check" << std::endl;
+            output << "!jump ___good" << std::endl;
+            output << "pshi :$ptr->___FieldMetaInfo.offset" << std::endl;
+            output << "ret" << std::endl;
+            output << "!jump ___check" << std::endl;
+            output << "jifi 0 @___next @___end" << std::endl;
+            output << "!jump ___next" << std::endl;
+            output << "sadr $ptr ___FieldMetaInfo 2" << std::endl;
+            output << "deci 0 0" << std::endl;
+            output << "goto @___begin" << std::endl;
+            output << "!jump ___end" << std::endl;
+            output << "pshi $___ZERO" << std::endl;
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
+            output << "!jump ___CLASSES_META_INITIALIZATION" << std::endl;
             for( auto& kv : classes )
-                output << "new $" << kv.first << "/type " << kv.first << "/___ClassMetaInfo 0" << std::endl;
+            {
+                output << "movi regi:0 $___ONE" << std::endl;
+                output << "new $" << kv.first << "/type ___ClassMetaInfo 0" << std::endl;
+                output << "movi regi:0 $" << kv.first << "/___CLASS_FIELDS_COUNT" << std::endl;
+                output << "new :$" << kv.first << "/type->___ClassMetaInfo.fields ___FieldMetaInfo 0" << std::endl;
+                output << "movi regi:0 $" << kv.first << "/___CLASS_METHODS_COUNT" << std::endl;
+                output << "new :$" << kv.first << "/type->___ClassMetaInfo.methods ___MethodMetaInfo 0" << std::endl;
+            }
             output << "ret" << std::endl;
             output << "!jump ___CODE_%_jump_%" << std::endl;
             output << "#increment _jump_" << std::endl;
@@ -211,7 +370,11 @@ namespace Kaiju
             }
             output << "!jump ___PROGRAM_EXIT" << std::endl;
             for( auto& kv : classes )
+            {
+                output << "del :$" << kv.first << "/type->___ClassMetaInfo.fields" << std::endl;
+                output << "del :$" << kv.first << "/type->___ClassMetaInfo.methods" << std::endl;
                 output << "del $" << kv.first << "/type" << std::endl;
+            }
             output << "!exit" << std::endl;
             return true;
         }
@@ -221,7 +384,7 @@ namespace Kaiju
             if( !constInts.count( v ) )
             {
                 std::stringstream ss;
-                ss << "__COSTANT_INT_" << m_uid << "_" << (m_uidGenerator++);
+                ss << "__COSTANT_INT_" << std::hash< int >()( v );
                 constInts[ v ] = ss.str();
             }
             return constInts[ v ];
@@ -232,7 +395,7 @@ namespace Kaiju
             if( !constFloats.count( v ) )
             {
                 std::stringstream ss;
-                ss << "__COSTANT_FLOAT_" << m_uid << "_" << (m_uidGenerator++);
+                ss << "__COSTANT_FLOAT_" << std::hash< float >()( v );
                 constFloats[ v ] = ss.str();
             }
             return constFloats[ v ];
@@ -244,10 +407,21 @@ namespace Kaiju
             if( !constStrings.count( s ) )
             {
                 std::stringstream ss;
-                ss << "__COSTANT_STRING_" << m_uid << "_" << (m_uidGenerator++);
+                ss << "__COSTANT_STRING_" << std::hash< std::string >()( v );
                 constStrings[ s ] = ss.str();
             }
             return constStrings[ s ];
+        }
+
+        const std::string& Program::constantHash( unsigned int v )
+        {
+            if( !constHash.count( v ) )
+            {
+                std::stringstream ss;
+                ss << "__COSTANT_HASH_" << std::hash< unsigned int >()( v );
+                constHash[ v ] = ss.str();
+            }
+            return constHash[ v ];
         }
 
         int Program::constantIntValue( const std::string& id )
@@ -274,6 +448,14 @@ namespace Kaiju
             return "";
         }
 
+        unsigned int Program::constantHashValue( const std::string& id )
+        {
+            for( auto& kv : constHash )
+                if( kv.second == id )
+                    return kv.first;
+            return 0;
+        }
+
         bool Program::loadContent( const std::string& path )
         {
             if( !m_contentLoader )
@@ -285,6 +467,8 @@ namespace Kaiju
             Program* p = m_contentLoader->onContentLoad( path, errors );
             if( !p )
             {
+                if( errors.empty() )
+                    return true;
                 appendError( 0, errors );
                 return false;
             }
@@ -313,10 +497,10 @@ namespace Kaiju
                 registersF = p->registersF;
             for( auto& kv : p->constInts )
             {
-                if( constInts.count( kv.first ) )
+                if( constInts.count( kv.first ) && constInts[ kv.first ] != kv.second )
                 {
                     std::stringstream ss;
-                    ss << "Duplicate of constant int value found during program absorbing: " << kv.second << " = " << kv.first;
+                    ss << "Duplicate of constant int value with different id found during program absorbing: " << kv.second << " = " << kv.first;
                     appendError( 0, ss.str() );
                     return false;
                 }
@@ -325,10 +509,10 @@ namespace Kaiju
             p->constInts.clear();
             for( auto& kv : p->constFloats )
             {
-                if( constFloats.count( kv.first ) )
+                if( constFloats.count( kv.first ) && constFloats[ kv.first ] != kv.second )
                 {
                     std::stringstream ss;
-                    ss << "Duplicate of constant float value found during programs absorbing: " << kv.second << " = " << kv.first;
+                    ss << "Duplicate of constant int value with different id found during program absorbing: " << kv.second << " = " << kv.first;
                     appendError( 0, ss.str() );
                     return false;
                 }
@@ -337,16 +521,28 @@ namespace Kaiju
             p->constFloats.clear();
             for( auto& kv : p->constStrings )
             {
-                if( constStrings.count( kv.first ) )
+                if( constStrings.count( kv.first ) && constStrings[ kv.first ] != kv.second )
                 {
                     std::stringstream ss;
-                    ss << "Duplicate of constant string value found during programs absorbing: " << kv.second << " = " << kv.first;
+                    ss << "Duplicate of constant string value with different id found during program absorbing: " << kv.second << " = " << kv.first;
                     appendError( 0, ss.str() );
                     return false;
                 }
                 constStrings[ kv.first ] = kv.second;
             }
             p->constStrings.clear();
+            for( auto& kv : p->constHash )
+            {
+                if( constHash.count( kv.first ) && constHash[ kv.first ] != kv.second )
+                {
+                    std::stringstream ss;
+                    ss << "Duplicate of constant hash value with different id found during program absorbing: " << kv.second << " = " << kv.first;
+                    appendError( 0, ss.str() );
+                    return false;
+                }
+                constHash[ kv.first ] = kv.second;
+            }
+            p->constHash.clear();
             for( auto& kv : p->classes )
             {
                 if( classes.count( kv.first ) )
@@ -368,7 +564,7 @@ namespace Kaiju
             return classes.count( id ) ? classes[ id ] : 0;
         }
 
-        Program::Directive::Directive( Program* p, ASTNode* n )
+        Program::Directive::Directive( Program* p, ASTNode* n, Convertible* c )
         : Convertible( "directive", p, n )
         {
             if( n->type != "directive.statement" )
@@ -443,6 +639,82 @@ namespace Kaiju
                     return;
                 }
             }
+            else if( id == "atomField" && c )
+            {
+                if( arguments.size() != 3 )
+                {
+                    appendError( n, "Atom field directive does not have exactly three arguments!" );
+                    return;
+                }
+                if( arguments[ 0 ]->type != Value::T_IDENTIFIER )
+                {
+                    appendError( n, "Atom field directive first argument is not type of identifier!" );
+                    return;
+                }
+                if( arguments[ 1 ]->type != Value::T_IDENTIFIER )
+                {
+                    appendError( n, "Atom field directive second argument is not type of identifier!" );
+                    return;
+                }
+                if( arguments[ 2 ]->type != Value::T_NUMBER_INT )
+                {
+                    appendError( n, "Atom field directive third argument is not type of integer number!" );
+                    return;
+                }
+                std::string tid = arguments[ 0 ]->id;
+                std::string nid = arguments[ 1 ]->id;
+                if( tid != "int" && tid != "float" && tid != "byte" && tid != "address" )
+                {
+                    appendError( n, "Atom field directive type is not either int, float, byte or address!" );
+                    return;
+                }
+                Class* cls = (Class*)c;
+                if( cls->atomFields.count( nid ) )
+                {
+                    std::stringstream ss;
+                    ss << "Class: " << cls->id << " already have an atom field: " << nid;
+                    appendError( n, ss.str() );
+                    return;
+                }
+                int v = program->constantIntValue( arguments[ 2 ]->id );
+                if( v < 1 )
+                {
+                    appendError( n, "Atom field directive items count cannot be less than one!" );
+                    return;
+                }
+                cls->atomFields[ nid ] = std::make_pair( tid, v );
+            }
+            else if( id == "inject" )
+            {
+                if( arguments.size() != 1 )
+                {
+                    appendError( n, "Entry point directive does not have exactly one argument!" );
+                    return;
+                }
+                if( arguments[ 0 ]->type != Value::T_STRING )
+                {
+                    appendError( n, "Entry point directive first argument is not type of string!" );
+                    return;
+                }
+            }
+            else if( id == "ensureType" )
+            {
+                if( arguments.size() != 2 )
+                {
+                    appendError( n, "Ensure type directive does not have exactly two argument!" );
+                    return;
+                }
+                if( arguments[ 0 ]->type != Value::T_IDENTIFIER )
+                {
+                    appendError( n, "Entry point directive first argument is not type of identifier!" );
+                    return;
+                }
+                if( arguments[ 1 ]->type != Value::T_IDENTIFIER )
+                {
+                    appendError( n, "Entry point directive second argument is not type of identifier!" );
+                    return;
+                }
+            }
             else
             {
                 appendError( n, "Unknown directive!" );
@@ -468,6 +740,20 @@ namespace Kaiju
             return true;
         }
 
+        bool Program::Directive::convertToISC( std::stringstream& output )
+        {
+            if( id == "inject" )
+                output << program->constantStringValue( arguments[ 0 ]->id ) << std::endl;
+            else if( id == "ensureType" )
+            {
+                std::string vid = arguments[ 0 ]->id;
+                std::string tid = arguments[ 1 ]->id;
+                // TODO
+                //output << "eadr *$" << << std::endl;
+            }
+            return true;
+        }
+
         void Program::Directive::setProgram( Program* p )
         {
             program = p;
@@ -475,15 +761,13 @@ namespace Kaiju
                 v->setProgram( p );
         }
 
-        unsigned int Program::Variable::s_uidGenerator = 0;
-
         Program::Variable::Variable( Program* p, ASTNode* n )
         : Convertible( "variable", p, n )
         , type( T_UNDEFINED )
         , isStatic( false )
         , valueL( 0 )
         , valueR( 0 )
-        , m_uid( s_uidGenerator++ )
+        , m_uid( 0 )
         {
             if( n->type != "variable" )
             {
@@ -515,6 +799,8 @@ namespace Kaiju
                 ASTNode* nid = nd->findByType( "identifier" );
                 id = nid->value;
                 type = T_DECLARATION;
+                m_uid = std::hash< std::string >()( id );
+                p->constantHash( m_uid );
                 isValid = true;
             }
             else if( n->hasType( "variable.assignment" ) )
@@ -591,6 +877,8 @@ namespace Kaiju
                 }
                 valueR = v;
                 type = T_DECLARATION_ASSIGNMENT;
+                m_uid = std::hash< std::string >()( id );
+                p->constantHash( m_uid );
                 isValid = true;
             }
             else
@@ -634,13 +922,17 @@ namespace Kaiju
                 valueR->convertToISC( output );
                 output << "mpop $___valueR" << std::endl;
                 output << "mref $" << id << " $___valueR" << std::endl;
+                output << "mfin $___valueR" << std::endl;
+                output << "mdel $___valueR" << std::endl;
             }
             else if(type == T_ASSIGNMENT && valueL && valueR )
             {
-                valueL->convertToISC( output );
+                valueL->convertToISC( output, 0, true );
                 valueR->convertToISC( output );
                 output << "mpop $___valueR $___valueL" << std::endl;
                 output << "mref $___valueL $___valueR" << std::endl;
+                output << "mfin $___valueR" << std::endl;
+                output << "mdel $___valueR" << std::endl;
             }
             return true;
         }
@@ -694,6 +986,13 @@ namespace Kaiju
             isValid = true;
         }
 
+        Program::Block::Block( Program* p )
+        : Convertible( "block", p, 0 )
+        , m_uid( s_uidGenerator++ )
+        {
+            isValid = true;
+        }
+
         Program::Block::~Block()
         {
             variables.clear();
@@ -729,10 +1028,15 @@ namespace Kaiju
             output << "!jump ___scopeStart" << std::endl;
             for( auto s : statements )
                 s->convertToISC( output );
+            output << "mobj $___valueL" << std::endl;
+            output << "mpsh $___valueL" << std::endl;
             output << "ret" << std::endl;
             output << "!jump ___scopeExit" << std::endl;
             for( auto v : variables )
+            {
+                output << "mfin $" << v << std::endl;
                 output << "mdel $" << v << std::endl;
+            }
             output << "!namespace-end" << std::endl;
             return true;
         }
@@ -948,6 +1252,16 @@ namespace Kaiju
             std::string lvl( level, '-' );
             output << "[" << program->nextUIDpst() << "]" << lvl << "(objectDestruction)" << std::endl;
             value->convertToPST( output, level + 1 );
+            return true;
+        }
+
+        bool Program::ObjectDestruction::convertToISC( std::stringstream& output )
+        {
+            if( value )
+                value->convertToISC( output, 0, true );
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___valueL" << std::endl;
+            output << "mder $___valueL" << std::endl;
             return true;
         }
 
@@ -1415,6 +1729,25 @@ namespace Kaiju
             return true;
         }
 
+        bool Program::ControlFlowReturn::convertToISC( std::stringstream& output )
+        {
+            if( value )
+            {
+                value->convertToISC( output );
+                output << "mpop $___valueR" << std::endl;
+                output << "mobj $___valueL" << std::endl;
+                output << "mref $___valueL $___valueR" << std::endl;
+                output << "mpsh $___valueL" << std::endl;
+            }
+            else
+            {
+                output << "mobj $___valueL" << std::endl;
+                output << "mpsh $___valueL" << std::endl;
+            }
+            output << "ret" << std::endl;
+            return true;
+        }
+
         void Program::ControlFlowReturn::setProgram( Program* p )
         {
             program = p;
@@ -1580,13 +1913,11 @@ namespace Kaiju
                 value->setProgram( p );
         }
 
-        unsigned int Program::Method::s_uidGenerator = 0;
-
         Program::Method::Method( Program* p, ASTNode* n )
         : Convertible( "method", p, n )
         , isStatic( false )
         , statements( 0 )
-        , m_uid( s_uidGenerator )
+        , m_uid( 0 )
         {
             if( n->type != "class.method.definition_statement" )
             {
@@ -1638,6 +1969,22 @@ namespace Kaiju
                 return;
             }
             statements = b;
+            m_uid = std::hash< std::string >()( id );
+            p->constantHash( m_uid );
+            isValid = true;
+        }
+
+        Program::Method::Method( Program* p, const std::string& i, const std::vector< std::string >& a, bool s )
+        : Convertible( "method", p, 0 )
+        , isStatic( s )
+        , id( i )
+        , arguments( a )
+        , statements( 0 )
+        , m_uid( 0 )
+        {
+            statements = new Block( p );
+            m_uid = std::hash< std::string >()( id );
+            p->constantHash( m_uid );
             isValid = true;
         }
 
@@ -1665,8 +2012,6 @@ namespace Kaiju
         {
             output << "!jump " << id << std::endl;
             output << "!namespace " << id << std::endl;
-            output << "!data address ___returnValue 0" << std::endl;
-            output << "mobj $___returnValue" << std::endl;
             output << "!data int ___argumentsSize " << arguments.size() << std::endl;
             output << "popi regi:0" << std::endl;
             output << "movi regi:1 $___argumentsSize" << std::endl;
@@ -1680,9 +2025,10 @@ namespace Kaiju
             output << "dbgb $___argumentsCheckFailedMessage1" << std::endl;
             output << "dbgi regi:1" << std::endl;
             output << "dbgb $___NEW_LINE" << std::endl;
-            output << "psha $___returnValue" << std::endl;
+            output << "mobj $___valueL" << std::endl;
+            output << "psha $___valueL" << std::endl;
             output << "ret" << std::endl;
-            output << "!jump ___argumentsCheckPassed " << std::endl;
+            output << "!jump ___argumentsCheckPassed" << std::endl;
             output << "!data address this 0" << std::endl;
             if( !arguments.empty() )
             {
@@ -1694,11 +2040,12 @@ namespace Kaiju
                 }
                 output << "mpop $this" << ss.str() << std::endl;
             }
+            else
+                output << "mpop $this" << std::endl;
             if( isStatic )
                 output << "mova $this $___NULL" << std::endl;
             if( statements )
                 statements->convertToISC( output );
-            output << "psha $___returnValue" << std::endl;
             output << "ret" << std::endl;
             output << "!namespace-end" << std::endl;
             return true;
@@ -1711,8 +2058,11 @@ namespace Kaiju
                 statements->setProgram( p );
         }
 
+        unsigned int Program::Method::Call::s_uidGenerator = 0;
+
         Program::Method::Call::Call( Program* p, ASTNode* n )
         : Convertible( "methodCall", p, n )
+        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "class.method.call" )
             {
@@ -1781,6 +2131,7 @@ namespace Kaiju
             for( auto a : arguments )
                 Delete( a );
             arguments.clear();
+            m_uid = 0;
         }
 
         bool Program::Method::Call::convertToPST( std::stringstream& output, int level )
@@ -1794,6 +2145,68 @@ namespace Kaiju
             return true;
         }
 
+        bool Program::Method::Call::convertToISC( std::stringstream& output, bool isConstructor )
+        {
+            if( isConstructor )
+            {
+                output << "!namespace ___objectConstruct" << m_uid << std::endl;
+                output << "!data address ___this 0" << std::endl;
+                output << "mobj $___this" << std::endl;
+                output << "movi regi:0 $___ONE" << std::endl;
+                output << "mnew $___this " << id << "/___Data 0 @" << id << "/___Finalizer" << std::endl;
+                output << "mova :*$___this->" << id << "/___Data.___classMetaInfo $" << id << "/type" << std::endl;
+                for( std::vector< Value* >::reverse_iterator it = arguments.rbegin(); it != arguments.rend(); ++it )
+                    (*it)->convertToISC( output, 0, true );
+                output << "mpsh $___this" << std::endl;
+                output << "call @" << id << "/___Creator" << std::endl;
+                output << "mpsh $___this" << std::endl;
+                output << "pshi $" << program->constantInt( arguments.size() ) << std::endl;
+                output << "call @" << id << "/Constructor" << std::endl;
+                output << "mpop $___valueL" << std::endl;
+                output << "mfin $___valueL" << std::endl;
+                output << "mdel $___valueL" << std::endl;
+                output << "mpsh $___this" << std::endl;
+                output << "!namespace-end" << std::endl;
+                return true;
+            }
+            if( classId.empty() )
+            {
+                output << "!namespace ___methodCall" << m_uid << std::endl;
+                output << "!data address ___mcThis 0" << std::endl;
+                output << "!data address ___mcAddr 0" << std::endl;
+                output << "mpop $___mcThis" << std::endl;
+                output << "psha $" << program->constantHash( std::hash< std::string >()( id ) ) << std::endl;
+                output << "mpsh $___mcThis" << std::endl;
+                output << "call @___FIND_HASHED_METHOD_OF" << std::endl;
+                output << "popi $___mcAddr" << std::endl;
+                output << "movi regi:0 $___mcAddr" << std::endl;
+                output << "jifi 0 @___addressCheckPassed @___addressCheckFailed" << std::endl;
+                output << "!jump ___addressCheckFailed" << std::endl;
+                output << "!data bytes ___addressCheckFailedMessage \"Method: " << id << " was not found!\", 10, 0" << std::endl;
+                output << "dbgb $___addressCheckFailedMessage" << std::endl;
+                output << "mobj $___mcThis" << std::endl;
+                output << "mpsh $___mcThis" << std::endl;
+                output << "ret" << std::endl;
+                output << "!jump ___addressCheckPassed " << std::endl;
+                for( std::vector< Value* >::reverse_iterator it = arguments.rbegin(); it != arguments.rend(); ++it )
+                    (*it)->convertToISC( output, 0, true );
+                output << "mpsh $___mcThis" << std::endl;
+                output << "pshi $" << program->constantInt( arguments.size() ) << std::endl;
+                output << "jcal $___mcAddr" << std::endl;
+                output << "!namespace-end" << std::endl;
+            }
+            else
+            {
+                for( std::vector< Value* >::reverse_iterator it = arguments.rbegin(); it != arguments.rend(); ++it )
+                    (*it)->convertToISC( output );
+                output << "mobj $___valueL" << std::endl;
+                output << "mpsh $___valueL" << std::endl;
+                output << "pshi $" << program->constantInt( arguments.size() ) << std::endl;
+                output << "call @" << classId << "/" << id << std::endl;
+            }
+            return true;
+        }
+
         void Program::Method::Call::setProgram( Program* p )
         {
             program = p;
@@ -1801,11 +2214,14 @@ namespace Kaiju
                 a->setProgram( p );
         }
 
+        unsigned int Program::Value::s_uidGenerator = 0;
+
         Program::Value::Value( Program* p, ASTNode* n )
         : Convertible( "value", p, n )
         , type( T_UNDEFINED )
         , data( 0 )
         , accessValue( 0 )
+        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "value" )
             {
@@ -1975,6 +2391,7 @@ namespace Kaiju
             classId.clear();
             Delete( data );
             Delete( accessValue );
+            m_uid = 0;
         }
 
         bool Program::Value::convertToPST( std::stringstream& output, int level )
@@ -1993,11 +2410,12 @@ namespace Kaiju
             return true;
         }
 
-        bool Program::Value::convertToISC( std::stringstream& output )
+        bool Program::Value::convertToISC( std::stringstream& output, int level, bool isLeft )
         {
             if( type == T_OBJECT_CREATE )
             {
-                // TODO
+                if( data )
+                    ((Method::Call*)data)->convertToISC( output, true );
             }
             else if( type == T_METHOD_CALL )
             {
@@ -2014,14 +2432,12 @@ namespace Kaiju
             }
             else if( type == T_NUMBER_INT )
             {
-                output << "ptr $___valueL $" << id << std::endl;
-                output << "psha $___valueL" << std::endl;
+                output << "pshi $" << id << std::endl;
                 output << "call @___GET_INT_FROM_ATOM" << std::endl;
             }
             else if( type == T_NUMBER_FLOAT )
             {
-                output << "ptr $___valueL $" << id << std::endl;
-                output << "psha $___valueL" << std::endl;
+                output << "pshf $" << id << std::endl;
                 output << "call @___GET_FLOAT_FROM_ATOM" << std::endl;
             }
             else if( type == T_STRING )
@@ -2036,9 +2452,59 @@ namespace Kaiju
                 output << "mpsh $___valueL" << std::endl;
             }
             else if( type == T_FIELD )
-                output << "mpsh $" << classId << "/" << id << std::endl;
+            {
+                if( isLeft && !accessValue )
+                    output << "mpsh $" << classId << "/" << id << std::endl;
+                else
+                {
+                    output << "mobj $___valueL" << std::endl;
+                    output << "mref $___valueL $" << classId << "/" << id << std::endl;
+                    output << "mpsh $___valueL" << std::endl;
+                }
+            }
             else if( type == T_IDENTIFIER )
-                output << "mpsh $" << id << std::endl;
+            {
+                if( level > 0 )
+                {
+                    output << "!namespace ___accessField" << m_uid << std::endl;
+                    output << "!data address ___this 0" << std::endl;
+                    output << "!data address ___field 0" << std::endl;
+                    output << "!data int ___offset 0" << std::endl;
+                    output << "mpop $___this" << std::endl;
+                    output << "psha $" << program->constantHash( std::hash< std::string >()( id ) ) << std::endl;
+                    output << "mpsh $___this" << std::endl;
+                    output << "call @___FIND_HASHED_FIELD_OF" << std::endl;
+                    output << "popi $___offset" << std::endl;
+                    output << "movi regi:0 $___offset" << std::endl;
+                    output << "jifi 0 @___offsetCheckPassed @___offsetCheckFailed" << std::endl;
+                    output << "!jump ___offsetCheckFailed" << std::endl;
+                    output << "!data bytes ___offsetCheckFailedMessage \"Field: " << id << " was not found!\", 10, 0" << std::endl;
+                    output << "dbgb $___offsetCheckFailedMessage" << std::endl;
+                    output << "mobj $___field" << std::endl;
+                    output << "mpsh $___field" << std::endl;
+                    output << "ret" << std::endl;
+                    output << "!jump ___offsetCheckPassed " << std::endl;
+                    output << "movi regi:0 $___offset" << std::endl;
+                    output << "ptr $___field :*$___this->Object/___Data.___classMetaInfo" << std::endl;
+                    output << "sadr $___field byte 0" << std::endl;
+                    output << "mova $___field :$___field" << std::endl;
+                    output << "mpsh $___field" << std::endl;
+                    output << "!namespace-end" << std::endl;
+                }
+                else
+                {
+                    if( isLeft && !accessValue )
+                        output << "mpsh $" << id << std::endl;
+                    else
+                    {
+                        output << "mobj $___valueL" << std::endl;
+                        output << "mref $___valueL $" << id << std::endl;
+                        output << "mpsh $___valueL" << std::endl;
+                    }
+                }
+            }
+            if( accessValue )
+                accessValue->convertToISC( output, level + 1, isLeft );
             return true;
         }
 
@@ -2051,11 +2517,9 @@ namespace Kaiju
                 accessValue->setProgram( p );
         }
 
-        unsigned int Program::Class::s_uidGenerator = 0;
-
         Program::Class::Class( Program* p, ASTNode* n )
         : Convertible( "class", p, n )
-        , m_uid( s_uidGenerator++ )
+        , m_uid( 0 )
         {
             if( n->type != "class.definition_statement" )
             {
@@ -2088,12 +2552,29 @@ namespace Kaiju
             ASTNode* nb = n->findByType( "class.body" );
             for( auto nbs : nb->nodes )
             {
-                if( nbs.type == "variable" )
+                if( nbs.type == "directive.statement" )
+                {
+                    Directive* d = new Directive( p, &nbs, this );
+                    if( !d->isValid )
+                    {
+                        appendError( d );
+                        Delete( d );
+                        return;
+                    }
+                    Delete( d );
+                }
+                else if( nbs.type == "variable" )
                 {
                     Variable* v = new Variable( p, &nbs );
                     if( !v->isValid )
                     {
                         appendError( v );
+                        Delete( v );
+                        return;
+                    }
+                    if( !v->isStatic && v->type != Variable::T_DECLARATION )
+                    {
+                        appendError( &nbs, "Non-static field can be only declared!" );
                         Delete( v );
                         return;
                     }
@@ -2134,6 +2615,12 @@ namespace Kaiju
             }
             if( inheritance.empty() )
                 inheritance = "Object";
+            m_uid = std::hash< std::string >()( id );
+            p->constantHash( m_uid );
+            if( !methods.count( "Constructor" ) )
+                methods[ "Constructor" ] = new Method( p, "Constructor", std::vector< std::string >(), false );
+            if( !methods.count( "Destructor" ) )
+                methods[ "Destructor" ] = new Method( p, "Destructor", std::vector< std::string >(), false );
             isValid = true;
         }
 
@@ -2144,9 +2631,11 @@ namespace Kaiju
             for( auto& kv : fields )
                 Delete( kv.second );
             fields.clear();
+            atomFields.clear();
             for( auto& kv : methods )
                 Delete( kv.second );
             methods.clear();
+            m_uid = 0;
         }
 
         bool Program::Class::convertToPST( std::stringstream& output, int level )
@@ -2157,6 +2646,13 @@ namespace Kaiju
             output << "[" << program->nextUIDpst() << "]" << lvl << "-(fields)" << std::endl;
             for( auto& kv : fields )
                 kv.second->convertToPST( output, level + 2 );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(atomFields)" << std::endl;
+            for( auto& kv : atomFields )
+            {
+                output << "[" << program->nextUIDpst() << "]" << lvl << "--(atomField)" << kv.first << std::endl;
+                output << "[" << program->nextUIDpst() << "]" << lvl << "--(atomField.type)" << kv.second.first << std::endl;
+                output << "[" << program->nextUIDpst() << "]" << lvl << "--(atomField.value)" << kv.second.second << std::endl;
+            }
             output << "[" << program->nextUIDpst() << "]" << lvl << "-(methods)" << std::endl;
             for( auto& kv : methods )
                 kv.second->convertToPST( output, level + 2 );
@@ -2168,54 +2664,31 @@ namespace Kaiju
             output << "!namespace " << id << std::endl;
             output << "!data bytes ___CLASS_NAME \"" << id << "\", 0" << std::endl;
             output << "!data int ___CLASS_NAMELEN " << (id.length() + 1) << std::endl;
-            output << "!data int ___CLASS_UID " << m_uid << std::endl;
+            output << "!data address ___CLASS_UID " << m_uid << std::endl;
             output << "!data int ___CLASS_FIELDS_COUNT " << fields.size() << std::endl;
             output << "!data int ___CLASS_METHODS_COUNT " << methods.size() << std::endl;
             for( auto& kv : fields )
             {
                 output << "!data bytes ___FIELD_NAME_" << kv.first << " \"" << kv.first << "\", 0" << std::endl;
                 output << "!data int ___FIELD_NAMELEN_" << kv.first << " " << (kv.first.length() + 1) << std::endl;
-                output << "!data int ___FIELD_UID_" << kv.first << " " << kv.second->getUID() << std::endl;
+                output << "!data address ___FIELD_UID_" << kv.first << " " << kv.second->getUID() << std::endl;
                 output << "!data int ___FIELD_STATIC_" << kv.first << " " << (int)kv.second->isStatic << std::endl;
             }
             for( auto& kv : methods )
             {
                 output << "!data bytes ___METHOD_NAME_" << kv.first << " \"" << kv.first << "\", 0" << std::endl;
                 output << "!data int ___METHOD_NAMELEN_" << kv.first << " " << (kv.first.length() + 1) << std::endl;
-                output << "!data int ___METHOD_UID_" << kv.first << " " << kv.second->getUID() << std::endl;
+                output << "!data address ___METHOD_UID_" << kv.first << " " << kv.second->getUID() << std::endl;
                 output << "!data int ___METHOD_STATIC_" << kv.first << " " << (int)kv.second->isStatic << std::endl;
             }
-            output << "!struct-def ___FieldMetaInfo" << std::endl;
-            output << "!field byte name 128" << std::endl;
-            output << "!field int namelen 1" << std::endl;
-            output << "!field int uid 1" << std::endl;
-            output << "!field int static 1" << std::endl;
-            output << "!field address owner 1" << std::endl;
-            output << "!struct-end" << std::endl;
-            output << "!struct-def ___MethodMetaInfo" << std::endl;
-            output << "!field byte name 128" << std::endl;
-            output << "!field int namelen 1" << std::endl;
-            output << "!field int uid 1" << std::endl;
-            output << "!field int static 1" << std::endl;
-            output << "!field address address 1" << std::endl;
-            output << "!field address owner 1" << std::endl;
-            output << "!struct-end" << std::endl;
-            output << "!struct-def ___ClassMetaInfo" << std::endl;
-            output << "!field byte name 128" << std::endl;
-            output << "!field int namelen 1" << std::endl;
-            output << "!field int uid 1" << std::endl;
-            output << "!field address inheritanceMetaInfo 1" << std::endl;
-            output << "!field int fieldsCount 1" << std::endl;
-            output << "!field int methodsCount 1" << std::endl;
-            output << "!field " << id << "/___FieldMetaInfo fields " << fields.size() << std::endl;
-            output << "!field " << id << "/___MethodMetaInfo methods " << methods.size() << std::endl;
-            output << "!struct-end" << std::endl;
             output << "!struct-def ___Data" << std::endl;
             output << "!field address ___classMetaInfo 1" << std::endl;
             std::vector< std::string > fl;
             getFieldsList( fl );
             for( auto n : fl )
                 output << "!field address " << n << " 1" << std::endl;
+            for( auto& kv : atomFields )
+                output << "!field " << kv.second.first << " " << kv.first << " " << kv.second.second << std::endl;
             output << "!struct-end" << std::endl;
             std::vector< std::string > sfl;
             getFieldsList( sfl, true );
@@ -2228,44 +2701,89 @@ namespace Kaiju
             output << "!namespace " << id << std::endl;
             output << "!data address ___ptr 0" << std::endl;
             output << "movi regi:0 $" << id << "/___CLASS_NAMELEN" << std::endl;
-            output << "movi :$" << id << "/type->" << id << "/___ClassMetaInfo.namelen $" << id << "/___CLASS_NAMELEN" << std::endl;
-            output << "mov :$" << id << "/type->" << id << "/___ClassMetaInfo.name $" << id << "/___CLASS_NAME byte 0" << std::endl;
-            output << "movi :$" << id << "/type->" << id << "/___ClassMetaInfo.uid $" << id << "/___CLASS_UID" << std::endl;
-            output << "movi :$" << id << "/type->" << id << "/___ClassMetaInfo.fieldsCount $" << id << "/___CLASS_FIELDS_COUNT" << std::endl;
-            output << "movi :$" << id << "/type->" << id << "/___ClassMetaInfo.methodsCount $" << id << "/___CLASS_METHODS_COUNT" << std::endl;
-            output << "movi regi:0 $___ONE" << std::endl;
+            output << "movi regi:1 $___ONE" << std::endl;
+            output << "movi :$" << id << "/type->___ClassMetaInfo.namelen $" << id << "/___CLASS_NAMELEN" << std::endl;
+            output << "movb :$" << id << "/type->___ClassMetaInfo.name $" << id << "/___CLASS_NAME 0" << std::endl;
+            output << "mova :$" << id << "/type->___ClassMetaInfo.uid $" << id << "/___CLASS_UID" << std::endl;
+            output << "movi :$" << id << "/type->___ClassMetaInfo.fieldsCount $" << id << "/___CLASS_FIELDS_COUNT" << std::endl;
+            output << "movi :$" << id << "/type->___ClassMetaInfo.methodsCount $" << id << "/___CLASS_METHODS_COUNT" << std::endl;
             Class* inh = program->findClass( inheritance );
             if( inh )
-                output << "mov :$" << id << "/type->" << id << "/___ClassMetaInfo.inheritanceMetaInfo $" << inh->id << "/type address 0" << std::endl;
+                output << "mova :$" << id << "/type->___ClassMetaInfo.inheritanceMetaInfo $" << inh->id << "/type" << std::endl;
             else
-                output << "movi :$" << id << "/type->" << id << "/___ClassMetaInfo.inheritanceMetaInfo $___ZERO" << std::endl;
-            output << "ptr $___ptr :$" << id << "/type->" << id << "/___ClassMetaInfo.fields" << std::endl;
+                output << "mova :$" << id << "/type->___ClassMetaInfo.inheritanceMetaInfo $___NULL" << std::endl;
+            output << "mova $___ptr :$" << id << "/type->___ClassMetaInfo.fields" << std::endl;
             for( auto& kv : fields )
             {
-                output << "movi :$___ptr->" << id << "/___FieldMetaInfo.namelen $" << id << "/___FIELD_NAMELEN_" << kv.first << std::endl;
-                output << "mov :$___ptr->" << id << "/___FieldMetaInfo.name $" << id << "/___FIELD_NAME_" << kv.first <<" byte 0" << std::endl;
-                output << "movi :$___ptr->" << id << "/___FieldMetaInfo.uid $" << id << "/___FIELD_UID_" << kv.first << std::endl;
-                output << "movi :$___ptr->" << id << "/___FieldMetaInfo.static $" << id << "/___FIELD_STATIC_" << kv.first << std::endl;
-                output << "movi :$___ptr->" << id << "/___FieldMetaInfo.owner $" << id << "/type" << std::endl;
-                output << "sadr $___ptr " << id << "/___FieldMetaInfo 0" << std::endl;
+                output << "movi :$___ptr->___FieldMetaInfo.namelen $" << id << "/___FIELD_NAMELEN_" << kv.first << std::endl;
+                output << "movi regi:0 $" << id << "/___FIELD_NAMELEN_" << kv.first << std::endl;
+                output << "movb :$___ptr->___FieldMetaInfo.name $" << id << "/___FIELD_NAME_" << kv.first <<" 0" << std::endl;
+                output << "mova :$___ptr->___FieldMetaInfo.uid $" << id << "/___FIELD_UID_" << kv.first << std::endl;
+                output << "movi :$___ptr->___FieldMetaInfo.static $" << id << "/___FIELD_STATIC_" << kv.first << std::endl;
+                if( kv.second->isStatic )
+                    output << "movi :$___ptr->___FieldMetaInfo.offset $___ZERO" << std::endl;
+                else
+                    output << "poff :$___ptr->___FieldMetaInfo.offset :$" << id << "/type->" << id << "/___Data." << kv.first << std::endl;
+                output << "mova :$___ptr->___FieldMetaInfo.owner $" << id << "/type" << std::endl;
+                output << "sadr $___ptr ___FieldMetaInfo 1" << std::endl;
             }
-            output << "ptr $___ptr :$" << id << "/type->" << id << "/___ClassMetaInfo.methods" << std::endl;
+            output << "mova $___ptr :$" << id << "/type->___ClassMetaInfo.methods" << std::endl;
             for( auto& kv : methods )
             {
-                output << "movi :$___ptr->" << id << "/___MethodMetaInfo.namelen $" << id << "/___METHOD_NAMELEN_" << kv.first << std::endl;
-                output << "mov :$___ptr->" << id << "/___MethodMetaInfo.name $" << id << "/___METHOD_NAME_" << kv.first <<" byte 0" << std::endl;
-                output << "movi :$___ptr->" << id << "/___MethodMetaInfo.uid $" << id << "/___METHOD_UID_" << kv.first << std::endl;
-                output << "movi :$___ptr->" << id << "/___MethodMetaInfo.static $" << id << "/___METHOD_STATIC_" << kv.first << std::endl;
-                output << "addr :$___ptr->" << id << "/___MethodMetaInfo.address @" << id << "/" << kv.first << std::endl;
-                output << "movi :$___ptr->" << id << "/___MethodMetaInfo.owner $" << id << "/type" << std::endl;
-                output << "sadr $___ptr " << id << "/___MethodMetaInfo 0" << std::endl;
+                output << "movi :$___ptr->___MethodMetaInfo.namelen $" << id << "/___METHOD_NAMELEN_" << kv.first << std::endl;
+                output << "movi regi:0 $" << id << "/___METHOD_NAMELEN_" << kv.first << std::endl;
+                output << "movb :$___ptr->___MethodMetaInfo.name $" << id << "/___METHOD_NAME_" << kv.first <<" 0" << std::endl;
+                output << "mova :$___ptr->___MethodMetaInfo.uid $" << id << "/___METHOD_UID_" << kv.first << std::endl;
+                output << "movi :$___ptr->___MethodMetaInfo.static $" << id << "/___METHOD_STATIC_" << kv.first << std::endl;
+                output << "jadr :$___ptr->___MethodMetaInfo.address @" << id << "/" << kv.first << std::endl;
+                output << "mova :$___ptr->___MethodMetaInfo.owner $" << id << "/type" << std::endl;
+                output << "sadr $___ptr ___MethodMetaInfo 1" << std::endl;
             }
             for( auto n : sfl )
+            {
                 output << "mobj $" << id << "/" << n << std::endl;
+                if( fields.count( n ) && fields[ n ]->isStatic && fields[ n ]->type == Variable::T_DECLARATION_ASSIGNMENT )
+                {
+                    fields[ n ]->valueR->convertToISC( output );
+                    output << "mpop $___valueR" << std::endl;
+                    output << "mref $" << id << "/" << n << " $___valueR" << std::endl;
+                    output << "mfin $___valueR" << std::endl;
+                    output << "mdel $___valueR" << std::endl;
+                }
+            }
             output << "goto @___CODE_%_goto_%" << std::endl;
             output << "#increment _goto_" << std::endl;
             for( auto& kv : methods )
                 kv.second->convertToISC( output );
+            output << "!jump ___Finalizer" << std::endl;
+            output << "!namespace ___Finalizer" << std::endl;
+            output << "!data address ___this 0" << std::endl;
+            output << "mpop $___this" << std::endl;
+            output << "mpsh $___this" << std::endl;
+            output << "pshi $___ZERO" << std::endl;
+            output << "call @" << id << "/Destructor" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___valueL" << std::endl;
+            output << "mdel $___valueL" << std::endl;
+            for( auto& kv : fields )
+            {
+                if( !kv.second->isStatic )
+                {
+                    output << "mdel :*$___this->" << id << "/___Data." << kv.first << std::endl;
+                    output << "mova :*$___this->" << id << "/___Data." << kv.first << " $___NULL" << std::endl;
+                }
+            }
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
+            output << "!jump ___Creator" << std::endl;
+            output << "!namespace ___Creator" << std::endl;
+            output << "!data address ___this 0" << std::endl;
+            output << "mpop $___this" << std::endl;
+            for( auto& kv : fields )
+                if( !kv.second->isStatic )
+                    output << "mobj :*$___this->" << id << "/___Data." << kv.first << std::endl;
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
             output << "!namespace-end" << std::endl;
             output << "!exit" << std::endl;
             return true;
@@ -2274,7 +2792,7 @@ namespace Kaiju
         void Program::Class::getFieldsList( std::vector< std::string >& out, bool isStatic )
         {
             Class* ic = program->findClass( inheritance );
-            if( ic )
+            if( ic && ic != this )
                 ic->getFieldsList( out );
             for( auto& kv : fields )
                 if( kv.second->isStatic == isStatic && std::find( out.begin(), out.end(), kv.first ) == out.end() )

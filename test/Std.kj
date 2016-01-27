@@ -1,0 +1,14 @@
+% use("Atom.kj");
+
+# Std
+{
+	~@ Write(...)
+	{
+
+	}
+
+	~@ WriteLine(...)
+	{
+		
+	}
+}

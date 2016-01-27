@@ -1,0 +1,20 @@
+% use("Object.kj");
+
+# Person
+{
+	$ name;
+	$ age;
+
+	@ Constructor(n, a)
+	{
+		% ensureType(n, String);
+		% ensureType(a, Int);
+
+		this.name = n;
+		this.age = a;
+	}
+
+	@ Destructor()
+	{
+	}
+}

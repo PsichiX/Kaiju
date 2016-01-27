@@ -89,9 +89,9 @@ public:
             return 0;
         if( std::find( usedPaths.begin(), usedPaths.end(), usedPath ) != usedPaths.end() )
         {
-            std::stringstream ss;
-            ss << "Program under given path is already used: " << usedPath << std::endl;
-            errors = ss.str();
+            //std::stringstream ss;
+            //ss << "Program under given path is already used: " << usedPath << std::endl;
+            //errors = ss.str();
             return 0;
         }
         usedPaths.push_back( usedPath );

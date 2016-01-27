@@ -56,13 +56,14 @@ namespace Kaiju
 
             bool convertToPST( std::stringstream& output, int level = 0 );
             bool convertToISC( std::stringstream& output );
-            unsigned int getUID() { return m_uid; };
             const std::string& constantInt( int v );
             const std::string& constantFloat( float v );
             const std::string& constantString( const std::string& v );
+            const std::string& constantHash( unsigned int v );
             int constantIntValue( const std::string& id );
             float constantFloatValue( const std::string& id );
             std::string constantStringValue( const std::string& id );
+            unsigned int constantHashValue( const std::string& id );
             unsigned int nextUIDpst() { return m_pstUidGenerator++; };
             std::string subInput(size_t start, size_t length) { return m_input ? m_input->substr(start, length) : ""; };
             bool loadContent( const std::string& path );
@@ -76,13 +77,11 @@ namespace Kaiju
             std::map< int, std::string > constInts;
             std::map< float, std::string > constFloats;
             std::map< std::string, std::string > constStrings;
+            std::map< unsigned int, std::string > constHash;
             std::map< std::string, Class* > classes;
             std::string entryPoint;
 
         private:
-            static unsigned int s_uidGenerator;
-
-            unsigned int m_uid;
             ContentLoader* m_contentLoader;
             std::string* m_input;
             unsigned int m_uidGenerator;
@@ -92,11 +91,11 @@ namespace Kaiju
             class Directive : public Convertible
             {
             public:
-                Directive( Program* p, ASTNode* n );
+                Directive( Program* p, ASTNode* n, Convertible* c = 0 );
                 virtual ~Directive();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p );
 
                 std::string id;
@@ -129,8 +128,6 @@ namespace Kaiju
                 Value* valueR;
 
             private:
-                static unsigned int s_uidGenerator;
-
                 unsigned int m_uid;
             };
 
@@ -138,6 +135,7 @@ namespace Kaiju
             {
             public:
                 Block( Program* p, ASTNode* n, bool oneStatement = false );
+                Block( Program* p );
                 virtual ~Block();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
@@ -162,7 +160,7 @@ namespace Kaiju
                 virtual ~ObjectDestruction();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p );
 
                 Value* value;
@@ -233,7 +231,7 @@ namespace Kaiju
                 virtual ~ControlFlowReturn();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p );
 
                 Value* value;
@@ -294,6 +292,7 @@ namespace Kaiju
             {
             public:
                 Method( Program* p, ASTNode* n );
+                Method( Program* p, const std::string& i, const std::vector< std::string >& a, bool s );
                 virtual ~Method();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
@@ -307,8 +306,6 @@ namespace Kaiju
                 Block* statements;
 
             private:
-                static unsigned int s_uidGenerator;
-
                 unsigned int m_uid;
 
             public:
@@ -319,12 +316,18 @@ namespace Kaiju
                     virtual ~Call();
 
                     bool convertToPST( std::stringstream& output, int level = 0 );
-                    bool convertToISC( std::stringstream& output ) { return false; };
+                    bool convertToISC( std::stringstream& output ) { return convertToISC( output, false ); };
+                    bool convertToISC( std::stringstream& output, bool isConstructor );
                     virtual void setProgram( Program* p );
 
                     std::string id;
                     std::string classId;
                     std::vector< Value* > arguments;
+
+                private:
+                    static unsigned int s_uidGenerator;
+
+                    unsigned int m_uid;
                 };
             };
 
@@ -350,7 +353,8 @@ namespace Kaiju
                 virtual ~Value();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output );
+                bool convertToISC( std::stringstream& output ) { return convertToISC( output, 0 ); };
+                bool convertToISC( std::stringstream& output, int level, bool isLeft = false );
                 virtual void setProgram( Program* p );
 
                 Type type;
@@ -358,6 +362,11 @@ namespace Kaiju
                 std::string classId;
                 Convertible* data;
                 Value* accessValue;
+
+            private:
+                static unsigned int s_uidGenerator;
+
+                unsigned int m_uid;
             };
 
             class Class : public Convertible
@@ -374,11 +383,10 @@ namespace Kaiju
                 std::string id;
                 std::string inheritance;
                 std::map< std::string, Variable* > fields;
+                std::map< std::string, std::pair< std::string, int > > atomFields;
                 std::map< std::string, Method* > methods;
 
             private:
-                static unsigned int s_uidGenerator;
-
                 unsigned int m_uid;
             };
         };

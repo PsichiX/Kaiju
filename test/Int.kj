@@ -1,0 +1,60 @@
+% use("Object.kj");
+
+# Int
+{
+	% atomField(int, ___data, 1);
+
+	@ Constructor()
+	{
+		% inject("movi :*$this->Int/___Data.___data $___ZERO");
+	}
+
+	@ Destructor()
+	{
+		% inject("movi :*$this->Int/___Data.___data $___ZERO");
+	}
+
+	@ Add(v)
+	{
+		% ensureType(v, Int);
+		$ result = 0;
+		% inject("movi regi:0 :*$this->Int/___Data.___data");
+		% inject("movi regi:1 :*$v->Int/___Data.___data");
+		% inject("addi 2 0 1");
+		% inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	@ Sub(v)
+	{
+		% ensureType(v, Int);
+		$ result = 0;
+		% inject("movi regi:0 :*$this->Int/___Data.___data");
+		% inject("movi regi:1 :*$v->Int/___Data.___data");
+		% inject("subi 2 0 1");
+		% inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	@ Mul(v)
+	{
+		% ensureType(v, Int);
+		$ result = 0;
+		% inject("movi regi:0 :*$this->Int/___Data.___data");
+		% inject("movi regi:1 :*$v->Int/___Data.___data");
+		% inject("muli 2 0 1");
+		% inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	@ Div(v)
+	{
+		% ensureType(v, Int);
+		$ result = 0;
+		% inject("movi regi:0 :*$this->Int/___Data.___data");
+		% inject("movi regi:1 :*$v->Int/___Data.___data");
+		% inject("divi 2 0 1");
+		% inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+}
