@@ -4,20 +4,20 @@ class Int
 {
 	#atomField(int, ___data, 1);
 
-	met Constructor()
+	method Constructor()
 	{
 		#inject("movi :*$this->Int/___Data.___data $___ZERO");
 	}
 
-	met Destructor()
+	method Destructor()
 	{
 		#inject("movi :*$this->Int/___Data.___data $___ZERO");
 	}
 
-	met Add(v)
+	method Add(v)
 	{
 		#ensureType(v, Int);
-		let result = 0;
+		var result = 0;
 		#inject("movi regi:0 :*$this->Int/___Data.___data");
 		#inject("movi regi:1 :*$v->Int/___Data.___data");
 		#inject("addi 2 0 1");
@@ -25,10 +25,10 @@ class Int
 		return result;
 	}
 
-	met Sub(v)
+	method Sub(v)
 	{
 		#ensureType(v, Int);
-		let result = 0;
+		var result = 0;
 		#inject("movi regi:0 :*$this->Int/___Data.___data");
 		#inject("movi regi:1 :*$v->Int/___Data.___data");
 		#inject("subi 2 0 1");
@@ -36,10 +36,10 @@ class Int
 		return result;
 	}
 
-	met Mul(v)
+	method Mul(v)
 	{
 		#ensureType(v, Int);
-		let result = 0;
+		var result = 0;
 		#inject("movi regi:0 :*$this->Int/___Data.___data");
 		#inject("movi regi:1 :*$v->Int/___Data.___data");
 		#inject("muli 2 0 1");
@@ -47,10 +47,10 @@ class Int
 		return result;
 	}
 
-	met Div(v)
+	method Div(v)
 	{
 		#ensureType(v, Int);
-		let result = 0;
+		var result = 0;
 		#inject("movi regi:0 :*$this->Int/___Data.___data");
 		#inject("movi regi:1 :*$v->Int/___Data.___data");
 		#inject("divi 2 0 1");
@@ -58,10 +58,10 @@ class Int
 		return result;
 	}
 
-	met GreaterThan(v)
+	method GreaterThan(v)
 	{
 		#ensureType(v, Int);
-		let result = false;
+		var result = false;
 		#inject("movi regi:0 :*$this->Int/___Data.___data");
 		#inject("movi regi:1 :*$v->Int/___Data.___data");
 		#inject("tgti 2 0 1");
@@ -69,10 +69,10 @@ class Int
 		return result;
 	}
 
-	met LessThan(v)
+	method LessThan(v)
 	{
 		#ensureType(v, Int);
-		let result = false;
+		var result = false;
 		#inject("movi regi:0 :*$this->Int/___Data.___data");
 		#inject("movi regi:1 :*$v->Int/___Data.___data");
 		#inject("tlti 2 0 1");
@@ -80,10 +80,10 @@ class Int
 		return result;
 	}
 
-	met EqualTo(v)
+	method EqualTo(v)
 	{
 		#ensureType(v, Int);
-		let result = false;
+		var result = false;
 		#inject("movi regi:0 :*$this->Int/___Data.___data");
 		#inject("movi regi:1 :*$v->Int/___Data.___data");
 		#inject("teti 2 0 1");

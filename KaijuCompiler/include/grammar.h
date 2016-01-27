@@ -65,8 +65,8 @@ namespace Kaiju
         struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call/*, Operator::binary_operation, Operator::unary_operation*/, false_value, true_value, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
         namespace Variable
         {
-            struct prefix : pegtl::string< 'l', 'e', 't' > {};
-            struct prefix_static : pegtl::seq< pegtl::string< 's', 't', 'a', 't', 'i', 'c' >, whitespaces_any, pegtl::string< 'l', 'e', 't' > > {};
+            struct prefix : pegtl::string< 'v', 'a', 'r' > {};
+            struct prefix_static : pegtl::seq< pegtl::string< 's', 't', 'a', 't', 'i', 'c' >, whitespaces_any, pegtl::string< 'v', 'a', 'r' > > {};
             struct assignment;
             struct declaration : pegtl::seq< pegtl::sor< prefix, prefix_static >, whitespaces_any, identifier > {};
             struct declaration_assignment : pegtl::seq< declaration, whitespaces_any, pegtl::one< '=' >, whitespaces_any, value > {};
@@ -79,8 +79,8 @@ namespace Kaiju
         {
             namespace Method
             {
-                struct prefix : pegtl::string< 'm', 'e', 't' > {};
-                struct prefix_static : pegtl::seq< pegtl::string< 's', 't', 'a', 't', 'i', 'c' >, whitespaces_any, pegtl::string< 'm', 'e', 't' > > {};;
+                struct prefix : pegtl::string< 'm', 'e', 't', 'h', 'o', 'd' > {};
+                struct prefix_static : pegtl::seq< pegtl::string< 's', 't', 'a', 't', 'i', 'c' >, whitespaces_any, pegtl::string< 'm', 'e', 't', 'h', 'o', 'd' > > {};;
                 namespace Definition
                 {
                     struct argument_list : pegtl::opt< identifier, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, identifier > > {};

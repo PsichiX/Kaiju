@@ -5,7 +5,7 @@ class String
 	#atomField(address, ___data, 1);
 	#atomField(int, ___size, 1);
 
-	met Constructor()
+	method Constructor()
 	{
 		#inject("movi regi:0 $___ONE");
 		#inject("new :*$this->String/___Data.___data byte 0");
@@ -13,7 +13,7 @@ class String
 		#inject("movi :*$this->String/___Data.___size $___ZERO");
 	}
 
-	met Destructor()
+	method Destructor()
 	{
 		#inject("del :*$this->String/___Data.___data");
 		#inject("mova :*$this->String/___Data.___data $___NULL");

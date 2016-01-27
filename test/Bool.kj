@@ -4,19 +4,19 @@ class Bool
 {
 	#atomField(int, ___data, 1);
 
-	static met True()
+	static method True()
 	{
 		return true;
 	}
 
-	static met False()
+	static method False()
 	{
 		return false;
 	}
 
-	met Not()
+	method Not()
 	{
-		let result = false;
+		var result = false;
 		#inject("movi regi:0 :*$result->Bool/___Data.___data");
 		#inject("not 0 0");
 		#inject("movi :*$result->Bool/___Data.___data regi:0");

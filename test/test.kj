@@ -8,19 +8,19 @@
 
 class Program
 {
-	static let a = 1;
-	static let b = 2;
+	static var a = 1;
+	static var b = 2;
 
-	static met Main(...)
+	static method Main(...)
 	{
-		let c = Program:Add(Program:a, Program:b);
+		var c = Program:Add(Program:a, Program:b);
 		//Std:WriteLine(c);
 		#inject("dbgi :*$c->Int/___Data.___data");
 		#inject("dbgb $___NEW_LINE");
 
-		let p = new Person("john", c.Add(20));
+		var p = new Person("john", c.Add(20));
 		//Std:WriteLine(p.age);
-		let tmp = p.age;
+		var tmp = p.age;
 		#inject("dbgi :*$tmp->Int/___Data.___data");
 		#inject("dbgb $___NEW_LINE");
 		delete p;
@@ -37,7 +37,7 @@ class Program
 
 		#inject("dbgb $___NEW_LINE");
 		
-		for(let i = 0; i.LessThan(tmp); i.Add(1))
+		for(var i = 0; i.LessThan(tmp); i.Add(1))
 		{
 			//Std:WriteLine(i);
 			#inject("dbgi :*$i->Int/___Data.___data");
@@ -69,7 +69,7 @@ class Program
 		}
 	}
 
-	static met Add(a, b)
+	static method Add(a, b)
 	{
 		return a.Add(b);
 		// near future:

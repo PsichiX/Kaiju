@@ -4,20 +4,20 @@ class Float
 {
 	#atomField(float, ___data, 1);
 
-	met Constructor()
+	method Constructor()
 	{
 		#inject("movf :*$this->Float/___Data.___data $___ZEROF");
 	}
 
-	met Destructor()
+	method Destructor()
 	{
 		#inject("movf :*$this->Float/___Data.___data $___ZEROF");
 	}
 
-	met Add(v)
+	method Add(v)
 	{
 		#ensureType(v, Float);
-		let result = 0.0;
+		var result = 0.0;
 		#inject("movf regf:0 :*$this->Float/___Data.___data");
 		#inject("movf regf:1 :*$v->Float/___Data.___data");
 		#inject("addf 2 0 1");
@@ -25,10 +25,10 @@ class Float
 		return result;
 	}
 
-	met Sub(v)
+	method Sub(v)
 	{
 		#ensureType(v, Float);
-		let result = 0.0;
+		var result = 0.0;
 		#inject("movf regf:0 :*$this->Float/___Data.___data");
 		#inject("movf regf:1 :*$v->Float/___Data.___data");
 		#inject("subf 2 0 1");
@@ -36,10 +36,10 @@ class Float
 		return result;
 	}
 
-	met Mul(v)
+	method Mul(v)
 	{
 		#ensureType(v, Float);
-		let result = 0.0;
+		var result = 0.0;
 		#inject("movf regf:0 :*$this->Float/___Data.___data");
 		#inject("movf regf:1 :*$v->Float/___Data.___data");
 		#inject("mulf 2 0 1");
@@ -47,10 +47,10 @@ class Float
 		return result;
 	}
 
-	met Div(v)
+	method Div(v)
 	{
 		#ensureType(v, Float);
-		let result = 0.0;
+		var result = 0.0;
 		#inject("movf regf:0 :*$this->Float/___Data.___data");
 		#inject("movf regf:1 :*$v->Float/___Data.___data");
 		#inject("divf 2 0 1");

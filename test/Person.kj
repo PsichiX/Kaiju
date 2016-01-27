@@ -2,10 +2,10 @@
 
 class Person
 {
-	let name;
-	let age;
+	var name;
+	var age;
 
-	met Constructor(n, a)
+	method Constructor(n, a)
 	{
 		#ensureType(n, String);
 		#ensureType(a, Int);
@@ -14,7 +14,7 @@ class Person
 		this.age = a;
 	}
 
-	met Destructor()
+	method Destructor()
 	{
 	}
 }

@@ -2,7 +2,7 @@
 
 class Std
 {
-	static met WriteLine(...)
+	static method WriteLine(...)
 	{
 
 	}
