@@ -1,4 +1,9 @@
 #include "../include/std_extension.h"
+#include <sstream>
+#include <algorithm>
+#include <functional>
+#include <cctype>
+#include <locale>
 
 namespace std
 {
@@ -7,63 +12,63 @@ namespace std
 
     string to_string( int val )
     {
-        std::stringstream ss;
+        stringstream ss;
         ss << val;
         return ss.str();
     }
 
     string to_string( long val )
     {
-        std::stringstream ss;
+        stringstream ss;
         ss << val;
         return ss.str();
     }
 
     string to_string( long long val )
     {
-        std::stringstream ss;
+        stringstream ss;
         ss << val;
         return ss.str();
     }
 
     string to_string( unsigned val )
     {
-        std::stringstream ss;
+        stringstream ss;
         ss << val;
         return ss.str();
     }
 
     string to_string( unsigned long val )
     {
-        std::stringstream ss;
+        stringstream ss;
         ss << val;
         return ss.str();
     }
 
     string to_string( unsigned long long val )
     {
-        std::stringstream ss;
+        stringstream ss;
         ss << val;
         return ss.str();
     }
 
     string to_string( float val )
     {
-        std::stringstream ss;
+        stringstream ss;
         ss << val;
         return ss.str();
     }
 
     string to_string( double val )
     {
-        std::stringstream ss;
+        stringstream ss;
         ss << val;
         return ss.str();
     }
 
     string to_string( long double val )
     {
-        std::stringstream ss;
+        stringstream ss;
         ss << val;
         return ss.str();
     }
@@ -84,6 +89,26 @@ namespace std
             pos = r.find( oldval, pos + newlen );
         }
         return r;
+    }
+
+    string string_ltrim( const string &str )
+    {
+        string s = str;
+        s.erase(s.begin(), find_if(s.begin(), s.end(), not1(ptr_fun<int, int>(isspace))));
+        return s;
+    }
+
+    string string_rtrim( const string &str )
+    {
+        string s = str;
+        s.erase(find_if(s.rbegin(), s.rend(), not1(ptr_fun<int, int>(isspace))).base(), s.end());
+        return s;
+    }
+
+    string string_trim( const string &str )
+    {
+        string s = str;
+        return string_ltrim(string_rtrim(s));
     }
 
 }

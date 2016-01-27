@@ -90,11 +90,11 @@ namespace Kaiju
             }
             if( !entryPoint.empty() )
             {
-                size_t f = entryPoint.find( '.' );
+                size_t f = entryPoint.find( ':' );
                 if( f >= 0 )
                 {
-                    std::string cn = entryPoint.substr( 0, f );
-                    std::string mn = entryPoint.substr( f + 1 );
+                    std::string cn = string_trim(entryPoint.substr( 0, f ));
+                    std::string mn = string_trim(entryPoint.substr( f + 1 ));
                     if( !classes.count( cn ) )
                     {
                         std::stringstream ss;
@@ -168,6 +168,8 @@ namespace Kaiju
             output << "!stack " << stackSize << std::endl;
             output << "!registers-i " << registersI << std::endl;
             output << "!registers-f " << registersF << std::endl;
+            output << "!external ___APPLICATION_ARGUMENTS_CSTR_PTR" << std::endl;
+            output << "!external ___APPLICATION_RESULT_INT" << std::endl;
             output << "!data int ___ZERO 0" << std::endl;
             output << "!data float ___ZEROF 0.0" << std::endl;
             output << "!data address ___NULL 0" << std::endl;
@@ -213,6 +215,9 @@ namespace Kaiju
             output << "!field address fields 1" << std::endl;
             output << "!field address methods 1" << std::endl;
             output << "!struct-end" << std::endl;
+            output << "!struct-def ___Atom" << std::endl;
+            output << "!field address ___classMetaInfo 1" << std::endl;
+            output << "!struct-end" << std::endl;
             output << "!start" << std::endl;
             output << "#counter _jump_ 0" << std::endl;
             output << "#counter _goto_ 0" << std::endl;
@@ -223,6 +228,27 @@ namespace Kaiju
             for( auto& kv : classes )
                 kv.second->convertToISC( output );
             output << "!start" << std::endl;
+            output << "!jump ___GET_BOOL_FROM_ATOM" << std::endl;
+            output << "!namespace ___funcGetBoolFromAtom" << std::endl;
+            output << "!data int value 0" << std::endl;
+            output << "!data address this 0" << std::endl;
+            output << "popi $value" << std::endl;
+            output << "movi regi:0 $___ONE" << std::endl;
+            output << "mobj $this" << std::endl;
+            output << "mnew $this Bool/___Data 0 @Bool/___Finalizer" << std::endl;
+            output << "mova :*$this->Bool/___Data.___classMetaInfo $Bool/type" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "call @Bool/___Creator" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "pshi $" << constantInt( 0 ) << std::endl;
+            output << "call @Bool/Constructor" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___valueL" << std::endl;
+            output << "mdel $___valueL" << std::endl;
+            output << "movi :*$this->Bool/___Data.___data $value" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
             output << "!jump ___GET_INT_FROM_ATOM" << std::endl;
             output << "!namespace ___funcGetIntFromAtom" << std::endl;
             output << "!data int value 0" << std::endl;
@@ -363,9 +389,13 @@ namespace Kaiju
             if( !entryPoint.empty() )
             {
                 // TODO: convert program arguments to array and push on stack (external data/stack).
+                output << "mpsh $___NULL" << std::endl;
                 output << "pshi $___ZERO" << std::endl;
-                size_t f = entryPoint.find( '.' );
-                output << "call @" << (f < 0 ? entryPoint : entryPoint.substr( 0, f ) + "/" + entryPoint.substr( f + 1 )) << std::endl;
+                size_t f = entryPoint.find( ':' );
+                output << "call @" << (f == std::string::npos ? entryPoint : string_trim(entryPoint.substr( 0, f )) + "/" + string_trim(entryPoint.substr( f + 1 ))) << std::endl;
+                output << "mpop $___valueL" << std::endl;
+                output << "mfin $___valueL" << std::endl;
+                output << "mdel $___valueL" << std::endl;
                 // TODO: pop returned value from stack and set it as application exit code (external data/stack).
             }
             output << "!jump ___PROGRAM_EXIT" << std::endl;
@@ -564,8 +594,11 @@ namespace Kaiju
             return classes.count( id ) ? classes[ id ] : 0;
         }
 
+        unsigned int Program::Directive::s_uidGenerator = 0;
+
         Program::Directive::Directive( Program* p, ASTNode* n, Convertible* c )
         : Convertible( "directive", p, n )
+        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "directive.statement" )
             {
@@ -729,6 +762,7 @@ namespace Kaiju
             for( auto a : arguments )
                 Delete( a );
             arguments.clear();
+            m_uid = 0;
         }
 
         bool Program::Directive::convertToPST( std::stringstream& output, int level )
@@ -748,8 +782,17 @@ namespace Kaiju
             {
                 std::string vid = arguments[ 0 ]->id;
                 std::string tid = arguments[ 1 ]->id;
-                // TODO
-                //output << "eadr *$" << << std::endl;
+                output << "!namespace ___ensureType" << m_uid << std::endl;
+                output << "eadr 0 $" << tid << "/type :*$" << vid << "->___Atom.___classMetaInfo" << std::endl;
+                output << "jifi 0 @___good @___bad" << std::endl;
+                output << "!jump ___bad" << std::endl;
+                output << "!data bytes ___message \"Variable: " << vid << " is not type of: " << tid << "\", 10, 0" << std::endl;
+                output << "dbgb $___message" << std::endl;
+                output << "mobj $___valueL" << std::endl;
+                output << "mpsh $___valueL" << std::endl;
+                output << "ret" << std::endl;
+                output << "!jump ___good" << std::endl;
+                output << "!namespace-end" << std::endl;
             }
             return true;
         }
@@ -1272,10 +1315,13 @@ namespace Kaiju
                 value->setProgram( p );
         }
 
+        unsigned int Program::ControlFlowWhileLoop::s_uidGenerator = 0;
+
         Program::ControlFlowWhileLoop::ControlFlowWhileLoop( Program* p, ASTNode* n )
         : Convertible( "whileLoop", p, n )
         , condition( 0 )
         , statements( 0 )
+        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "control_flow.while_statement" )
             {
@@ -1329,6 +1375,7 @@ namespace Kaiju
         {
             Delete( condition );
             Delete( statements );
+            m_uid = 0;
         }
 
         bool Program::ControlFlowWhileLoop::convertToPST( std::stringstream& output, int level )
@@ -1337,6 +1384,36 @@ namespace Kaiju
             output << "[" << program->nextUIDpst() << "]" << lvl << "(whileLoop)" << std::endl;
             condition->convertToPST( output, level + 1 );
             statements->convertToPST( output, level + 1 );
+            return true;
+        }
+
+        bool Program::ControlFlowWhileLoop::convertToISC( std::stringstream& output )
+        {
+            output << "!namespace ___while" << m_uid << std::endl;
+            output << "!jump ___check" << std::endl;
+            if( condition )
+                condition->convertToISC( output );
+            output << "mpop $___valueL" << std::endl;
+            output << "eadr 0 $Bool/type :*$___valueL->___Atom.___classMetaInfo" << std::endl;
+            output << "jifi 0 @___good @___bad" << std::endl;
+            output << "!jump ___bad" << std::endl;
+            output << "!data bytes ___message \"While loop condition is not type of Bool!\", 10, 0" << std::endl;
+            output << "dbgb $___message" << std::endl;
+            output << "mobj $___valueL" << std::endl;
+            output << "mpsh $___valueL" << std::endl;
+            output << "ret" << std::endl;
+            output << "!jump ___good" << std::endl;
+            output << "movi regi:0 :*$___valueL->Bool/___Data.___data" << std::endl;
+            output << "jifi 0 @___do @___end" << std::endl;
+            output << "!jump ___do" << std::endl;
+            if( statements )
+                statements->convertToISC( output );
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___valueL" << std::endl;
+            output << "mdel $___valueL" << std::endl;
+            output << "goto @___check" << std::endl;
+            output << "!jump ___end" << std::endl;
+            output << "!namespace-end" << std::endl;
             return true;
         }
 
@@ -1349,12 +1426,15 @@ namespace Kaiju
                 statements->setProgram( p );
         }
 
+        unsigned int Program::ControlFlowForLoop::s_uidGenerator = 0;
+
         Program::ControlFlowForLoop::ControlFlowForLoop( Program* p, ASTNode* n )
         : Convertible( "forLoop", p, n )
         , init( 0 )
         , condition( 0 )
         , iteration( 0 )
         , statements( 0 )
+        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "control_flow.for_statement" )
             {
@@ -1366,10 +1446,17 @@ namespace Kaiju
                 ASTNode* ns = n->findByType( "control_flow.for_stage_init" );
                 if( ns->hasType( "variable" ) )
                 {
-                    Variable* v = new Variable( p, ns->findByType( "variable" ) );
+                    ASTNode* nv = ns->findByType( "variable" );
+                    Variable* v = new Variable( p, nv );
                     if( !v->isValid )
                     {
                         appendError( v );
+                        Delete( v );
+                        return;
+                    }
+                    if( v->type != Variable::T_DECLARATION && v->type != Variable::T_DECLARATION_ASSIGNMENT )
+                    {
+                        appendError( nv, "For-loop init stage is not either variable declaration or variable declaration with assignment!" );
                         Delete( v );
                         return;
                     }
@@ -1457,6 +1544,7 @@ namespace Kaiju
             Delete( condition );
             Delete( iteration );
             Delete( statements );
+            m_uid = 0;
         }
 
         bool Program::ControlFlowForLoop::convertToPST( std::stringstream& output, int level )
@@ -1473,6 +1561,63 @@ namespace Kaiju
             if( iteration )
                 iteration->convertToPST( output, level + 2 );
             statements->convertToPST( output, level + 1 );
+            return true;
+        }
+
+        bool Program::ControlFlowForLoop::convertToISC( std::stringstream& output )
+        {
+            output << "!namespace ___for" << m_uid << std::endl;
+            if( init )
+            {
+                if( !init->id.empty() )
+                {
+                    output << "!data address " << init->id << " 0" << std::endl;
+                    output << "mobj $" << init->id << std::endl;
+                }
+                init->convertToISC( output );
+            }
+            output << "!jump ___check" << std::endl;
+            if( condition )
+            {
+                condition->convertToISC( output );
+                output << "mpop $___valueL" << std::endl;
+                output << "eadr 0 $Bool/type :*$___valueL->___Atom.___classMetaInfo" << std::endl;
+                output << "jifi 0 @___good @___bad" << std::endl;
+                output << "!jump ___bad" << std::endl;
+                output << "!data bytes ___message \"While loop condition is not type of Bool!\", 10, 0" << std::endl;
+                output << "dbgb $___message" << std::endl;
+                output << "mobj $___valueL" << std::endl;
+                output << "mpsh $___valueL" << std::endl;
+                output << "ret" << std::endl;
+                output << "!jump ___good" << std::endl;
+                output << "movi regi:0 :*$___valueL->Bool/___Data.___data" << std::endl;
+                output << "jifi 0 @___do @___end" << std::endl;
+                output << "!jump ___do" << std::endl;
+            }
+            if( statements )
+            {
+                statements->convertToISC( output );
+                output << "mpop $___valueL" << std::endl;
+                output << "mfin $___valueL" << std::endl;
+                output << "mdel $___valueL" << std::endl;
+            }
+            if( iteration )
+            {
+                iteration->convertToISC( output );
+                output << "mpop $___valueL" << std::endl;
+                if( init && !init->id.empty() )
+                    output << "mref $" << init->id << " $___valueL" << std::endl;
+                output << "mfin $___valueL" << std::endl;
+                output << "mdel $___valueL" << std::endl;
+            }
+            output << "goto @___check" << std::endl;
+            output << "!jump ___end" << std::endl;
+            if( init && !init->id.empty() )
+            {
+                output << "mfin $" << init->id << std::endl;
+                output << "mdel $" << init->id << std::endl;
+            }
+            output << "!namespace-end" << std::endl;
             return true;
         }
 
@@ -1581,8 +1726,11 @@ namespace Kaiju
                 statements->setProgram( p );
         }
 
+        unsigned int Program::ControlFlowCondition::s_uidGenerator = 0;
+
         Program::ControlFlowCondition::ControlFlowCondition( Program* p, ASTNode* n )
         : Convertible( "condition", p, n )
+        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "control_flow.condition_statement" )
             {
@@ -1664,6 +1812,7 @@ namespace Kaiju
                 Delete( kv.second );
             }
             stages.clear();
+            m_uid = 0;
         }
 
         bool Program::ControlFlowCondition::convertToPST( std::stringstream& output, int level )
@@ -1678,6 +1827,45 @@ namespace Kaiju
                     s.first->convertToPST( output, level + 2 );
                 s.second->convertToPST( output, level + 1 );
             }
+            return true;
+        }
+
+        bool Program::ControlFlowCondition::convertToISC( std::stringstream& output )
+        {
+            unsigned int step = 0;
+            output << "!namespace ___condition" << m_uid << std::endl;
+            output << "!data bytes ___message \"Condition is not type of Bool!\", 10, 0" << std::endl;
+            for( auto s : stages )
+            {
+                if( s.first )
+                {
+                    s.first->convertToISC( output );
+                    output << "mpop $___valueL" << std::endl;
+                    output << "eadr 0 $Bool/type :*$___valueL->___Atom.___classMetaInfo" << std::endl;
+                    output << "jifi 0 @___good" << step << " @___bad" << step << std::endl;
+                    output << "!jump ___bad" << step << std::endl;
+                    output << "dbgb $___message" << std::endl;
+                    output << "mobj $___valueL" << std::endl;
+                    output << "mpsh $___valueL" << std::endl;
+                    output << "ret" << std::endl;
+                    output << "!jump ___good" << step << std::endl;
+                    output << "movi regi:0 :*$___valueL->Bool/___Data.___data" << std::endl;
+                    output << "jifi 0 @___do" << step << " @___next" << step << std::endl;
+                    output << "!jump ___do" << step << std::endl;
+                }
+                if( s.second )
+                {
+                    s.second->convertToISC( output );
+                    output << "mpop $___valueL" << std::endl;
+                    output << "mfin $___valueL" << std::endl;
+                    output << "mdel $___valueL" << std::endl;
+                }
+                output << "goto @___end" << std::endl;
+                output << "!jump ___next" << step << std::endl;
+                ++step;
+            }
+            output << "!jump ___end" << std::endl;
+            output << "!namespace-end" << std::endl;
             return true;
         }
 
@@ -1916,6 +2104,7 @@ namespace Kaiju
         Program::Method::Method( Program* p, ASTNode* n )
         : Convertible( "method", p, n )
         , isStatic( false )
+        , argumentsParams( false )
         , statements( 0 )
         , m_uid( 0 )
         {
@@ -1938,11 +2127,6 @@ namespace Kaiju
                 appendError( n, "Method definition does not have identifier!" );
                 return;
             }
-            if( !n->hasType( "class.method.definition.argument_list" ) )
-            {
-                appendError( n, "Method definition does not have arguments list!" );
-                return;
-            }
             if( !n->hasType( "block" ) )
             {
                 appendError( n, "Method definition does not have body!" );
@@ -1950,16 +2134,26 @@ namespace Kaiju
             }
             ASTNode* nid = n->findByType( "identifier" );
             id = nid->value;
-            ASTNode* nal = n->findByType( "class.method.definition.argument_list" );
-            for( auto nala : nal->nodes )
+            if( n->hasType( "class.method.definition.argument_params" ) )
+                argumentsParams = true;
+            else if( n->hasType( "class.method.definition.argument_list" ) )
             {
-                if( nala.type == "identifier" )
-                    arguments.push_back( nala.value );
-                else
+                ASTNode* nal = n->findByType( "class.method.definition.argument_list" );
+                for( auto nala : nal->nodes )
                 {
-                    appendError( &nala, "Method argument is not an identifier!" );
-                    return;
+                    if( nala.type == "identifier" )
+                        arguments.push_back( nala.value );
+                    else
+                    {
+                        appendError( &nala, "Method argument is not an identifier!" );
+                        return;
+                    }
                 }
+            }
+            else
+            {
+                appendError( n, "Method definition does not have either arguments list or arguments params!" );
+                return;
             }
             Block* b = new Block( p, n->findByType( "block" ) );
             if( !b->isValid )
@@ -1979,6 +2173,7 @@ namespace Kaiju
         , isStatic( s )
         , id( i )
         , arguments( a )
+        , argumentsParams( false )
         , statements( 0 )
         , m_uid( 0 )
         {
@@ -1993,6 +2188,7 @@ namespace Kaiju
             isStatic = false;
             id.clear();
             arguments.clear();
+            argumentsParams = false;
             Delete( statements );
             m_uid = 0;
         }
@@ -2002,6 +2198,7 @@ namespace Kaiju
             std::string lvl( level, '-' );
             output << "[" << program->nextUIDpst() << "]" << lvl << "(method)" << id << std::endl;
             output << "[" << program->nextUIDpst() << "]" << lvl << "-(method.static)" << isStatic << std::endl;
+            output << "[" << program->nextUIDpst() << "]" << lvl << "-(method.params)" << argumentsParams << std::endl;
             for( auto a : arguments )
                 output << "[" << program->nextUIDpst() << "]" << lvl << "-(argument)" << a << std::endl;
             statements->convertToPST( output, level + 1 );
@@ -2013,22 +2210,41 @@ namespace Kaiju
             output << "!jump " << id << std::endl;
             output << "!namespace " << id << std::endl;
             output << "!data int ___argumentsSize " << arguments.size() << std::endl;
-            output << "popi regi:0" << std::endl;
-            output << "movi regi:1 $___argumentsSize" << std::endl;
-            output << "teti 2 0 1" << std::endl;
-            output << "jifi 2 @___argumentsCheckPassed @___argumentsCheckFailed" << std::endl;
-            output << "!jump ___argumentsCheckFailed" << std::endl;
-            output << "!data bytes ___argumentsCheckFailedMessage0 \"Method: " << id << " was called with wrong arguments count: \", 0" << std::endl;
-            output << "!data bytes ___argumentsCheckFailedMessage1 \", it should be: \", 0" << std::endl;
-            output << "dbgb $___argumentsCheckFailedMessage0" << std::endl;
-            output << "dbgi regi:0" << std::endl;
-            output << "dbgb $___argumentsCheckFailedMessage1" << std::endl;
-            output << "dbgi regi:1" << std::endl;
-            output << "dbgb $___NEW_LINE" << std::endl;
-            output << "mobj $___valueL" << std::endl;
-            output << "psha $___valueL" << std::endl;
-            output << "ret" << std::endl;
-            output << "!jump ___argumentsCheckPassed" << std::endl;
+            if( argumentsParams )
+            {
+                output << "popi $___argumentsSize" << std::endl;
+                output << "movi regi:0 $___argumentsSize" << std::endl;
+                // TODO: create array of arguments here
+                output << "!namespace ___argsLoop" << std::endl;
+                output << "!jump ___argsTest" << std::endl;
+                output << "jifi 0 @___argsPassed @___argsFailed" << std::endl;
+                output << "!jump ___argsPassed" << std::endl;
+                output << "mpop $___valueL" << std::endl;
+                output << "deci 0 0" << std::endl;
+                output << "goto @___argsTest" << std::endl;
+                output << "!jump ___argsFailed" << std::endl;
+                output << "!namespace-end" << std::endl;
+            }
+            else
+            {
+                output << "popi regi:0" << std::endl;
+                output << "movi regi:1 $___argumentsSize" << std::endl;
+                output << "teti 2 0 1" << std::endl;
+                output << "jifi 2 @___argumentsCheckPassed @___argumentsCheckFailed" << std::endl;
+                output << "!jump ___argumentsCheckFailed" << std::endl;
+                output << "!data bytes ___argumentsCheckFailedMessage0 \"Method: " << id << " was called with wrong arguments count: \", 0" << std::endl;
+                output << "!data bytes ___argumentsCheckFailedMessage1 \", it should be: \", 0" << std::endl;
+                output << "dbgb $___argumentsCheckFailedMessage0" << std::endl;
+                output << "dbgi regi:0" << std::endl;
+                output << "dbgb $___argumentsCheckFailedMessage1" << std::endl;
+                output << "dbgi regi:1" << std::endl;
+                output << "dbgb $___NEW_LINE" << std::endl;
+                output << "mobj $___valueL" << std::endl;
+                output << "psha $___valueL" << std::endl;
+                output << "ret" << std::endl;
+                output << "!jump ___argumentsCheckPassed" << std::endl;
+            }
+
             output << "!data address this 0" << std::endl;
             if( !arguments.empty() )
             {
@@ -2043,7 +2259,7 @@ namespace Kaiju
             else
                 output << "mpop $this" << std::endl;
             if( isStatic )
-                output << "mova $this $___NULL" << std::endl;
+                output << "mobj $this" << std::endl;
             if( statements )
                 statements->convertToISC( output );
             output << "ret" << std::endl;
@@ -2282,6 +2498,14 @@ namespace Kaiju
                 data = o;
                 type = T_UNARY_OPERATION;
             }
+            else if( n->hasType( "false_value" ) )
+            {
+                type = T_FALSE;
+            }
+            else if( n->hasType( "true_value" ) )
+            {
+                type = T_TRUE;
+            }
             else if( n->hasType( "number" ) )
             {
                 ASTNode* nn = n->findByType( "number" );
@@ -2429,6 +2653,16 @@ namespace Kaiju
             else if( type == T_UNARY_OPERATION )
             {
                 // TODO
+            }
+            else if( type == T_FALSE )
+            {
+                output << "pshi $___ZERO" << std::endl;
+                output << "call @___GET_BOOL_FROM_ATOM" << std::endl;
+            }
+            else if( type == T_TRUE )
+            {
+                output << "pshi $___ONE" << std::endl;
+                output << "call @___GET_BOOL_FROM_ATOM" << std::endl;
             }
             else if( type == T_NUMBER_INT )
             {

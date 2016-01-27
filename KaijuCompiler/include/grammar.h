@@ -58,9 +58,11 @@ namespace Kaiju
         }
         struct string : pegtl::seq< pegtl::one< '"' >, pegtl::until< pegtl::one< '"' >, String::character > > {};
         struct null_value : pegtl::string< 'n', 'u', 'l', 'l'  > {};
+        struct false_value : pegtl::string< 'f', 'a', 'l', 's', 'e'  > {};
+        struct true_value : pegtl::string< 't', 'r', 'u', 'e' > {};
         struct access_value : pegtl::seq< whitespaces_any, pegtl::one< '.' >, whitespaces_any, value > {};
         struct field : pegtl::seq< identifier, whitespaces_any, pegtl::one< ':' >, whitespaces_any, identifier > {};
-        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call/*, Operator::binary_operation, Operator::unary_operation*/, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
+        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call/*, Operator::binary_operation, Operator::unary_operation*/, false_value, true_value, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
         namespace Variable
         {
             struct prefix : pegtl::one< '$' > {};
@@ -82,7 +84,8 @@ namespace Kaiju
                 namespace Definition
                 {
                     struct argument_list : pegtl::opt< identifier, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, identifier > > {};
-                    struct arguments : pegtl::seq< pegtl::one< '(' >, whitespaces_any, argument_list, whitespaces_any, pegtl::one< ')' > > {};
+                    struct argument_params : pegtl::string< '.', '.', '.' > {};
+                    struct arguments : pegtl::seq< pegtl::one< '(' >, whitespaces_any, pegtl::sor< argument_params, argument_list >, whitespaces_any, pegtl::one< ')' > > {};
                 }
                 struct definition_statement : pegtl::seq< pegtl::sor< prefix, prefix_static>, whitespaces_any, identifier, whitespaces_any, Definition::arguments, whitespaces_any, block > {};
                 namespace Call

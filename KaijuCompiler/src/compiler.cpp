@@ -29,6 +29,8 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::number, "number", true );
             REGISTER_TYPE( Kaiju::Grammar::string, "string", false );
             REGISTER_TYPE( Kaiju::Grammar::null_value, "null_value", false );
+            REGISTER_TYPE( Kaiju::Grammar::false_value, "false_value", false );
+            REGISTER_TYPE( Kaiju::Grammar::true_value, "true_value", false );
             REGISTER_TYPE( Kaiju::Grammar::access_value, "access_value", true );
             REGISTER_TYPE( Kaiju::Grammar::field, "field", true );
             REGISTER_TYPE( Kaiju::Grammar::value, "value", true );
@@ -42,6 +44,7 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::Class::Method::prefix, "class.method.prefix", true );
             REGISTER_TYPE( Kaiju::Grammar::Class::Method::prefix_static, "class.method.prefix_static", true );
             REGISTER_TYPE( Kaiju::Grammar::Class::Method::Definition::argument_list, "class.method.definition.argument_list", true );
+            REGISTER_TYPE( Kaiju::Grammar::Class::Method::Definition::argument_params, "class.method.definition.argument_params", false );
             REGISTER_TYPE( Kaiju::Grammar::Class::Method::definition_statement, "class.method.definition_statement", true );
             REGISTER_TYPE( Kaiju::Grammar::Class::Method::Call::argument_list, "class.method.call.argument_list", true );
             REGISTER_TYPE( Kaiju::Grammar::Class::Method::call, "class.method.call", true );

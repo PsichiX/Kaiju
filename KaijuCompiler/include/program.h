@@ -100,6 +100,11 @@ namespace Kaiju
 
                 std::string id;
                 std::vector< Value* > arguments;
+
+            private:
+                static unsigned int s_uidGenerator;
+
+                unsigned int m_uid;
             };
 
             class Variable : public Convertible
@@ -173,11 +178,16 @@ namespace Kaiju
                 virtual ~ControlFlowWhileLoop();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p );
 
                 Value* condition;
                 Block* statements;
+
+            private:
+                static unsigned int s_uidGenerator;
+
+                unsigned int m_uid;
             };
 
             class ControlFlowForLoop : public Convertible
@@ -187,13 +197,18 @@ namespace Kaiju
                 virtual ~ControlFlowForLoop();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p );
 
                 Variable* init;
                 Value* condition;
                 Value* iteration;
                 Block* statements;
+
+            private:
+                static unsigned int s_uidGenerator;
+
+                unsigned int m_uid;
             };
 
             class ControlFlowForeachLoop : public Convertible
@@ -218,10 +233,15 @@ namespace Kaiju
                 virtual ~ControlFlowCondition();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p );
 
                 std::vector< std::pair< Value*, Block* > > stages;
+
+            private:
+                static unsigned int s_uidGenerator;
+
+                unsigned int m_uid;
             };
 
             class ControlFlowReturn : public Convertible
@@ -303,6 +323,7 @@ namespace Kaiju
                 bool isStatic;
                 std::string id;
                 std::vector< std::string > arguments;
+                bool argumentsParams;
                 Block* statements;
 
             private:
@@ -344,6 +365,8 @@ namespace Kaiju
                     T_NUMBER_INT,
                     T_NUMBER_FLOAT,
                     T_STRING,
+                    T_FALSE,
+                    T_TRUE,
                     T_NULL,
                     T_FIELD,
                     T_IDENTIFIER

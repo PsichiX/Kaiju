@@ -2,7 +2,6 @@
 #define __STD_EXTENSION_H__
 
 #include <string>
-#include <sstream>
 
 namespace std
 {
@@ -20,6 +19,9 @@ namespace std
 #endif
 
     string string_replace( const string& val, const string& oldval, const string& newval );
+    string string_ltrim( const string &str );
+    string string_rtrim( const string &str );
+    string string_trim( const string &str );
 
 }
 

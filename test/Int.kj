@@ -57,4 +57,37 @@
 		% inject("movi :*$result->Int/___Data.___data regi:2");
 		return result;
 	}
+
+	@ GreaterThan(v)
+	{
+		% ensureType(v, Int);
+		$ result = false;
+		% inject("movi regi:0 :*$this->Int/___Data.___data");
+		% inject("movi regi:1 :*$v->Int/___Data.___data");
+		% inject("tgti 2 0 1");
+		% inject("movi :*$result->Bool/___Data.___data regi:2");
+		return result;
+	}
+
+	@ LessThan(v)
+	{
+		% ensureType(v, Int);
+		$ result = false;
+		% inject("movi regi:0 :*$this->Int/___Data.___data");
+		% inject("movi regi:1 :*$v->Int/___Data.___data");
+		% inject("tlti 2 0 1");
+		% inject("movi :*$result->Bool/___Data.___data regi:2");
+		return result;
+	}
+
+	@ EqualTo(v)
+	{
+		% ensureType(v, Int);
+		$ result = false;
+		% inject("movi regi:0 :*$this->Int/___Data.___data");
+		% inject("movi regi:1 :*$v->Int/___Data.___data");
+		% inject("teti 2 0 1");
+		% inject("movi :*$result->Bool/___Data.___data regi:2");
+		return result;
+	}
 }

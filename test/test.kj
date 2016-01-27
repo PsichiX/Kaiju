@@ -1,7 +1,8 @@
 #!/usr/bin/env kaiju
 
-% entry("Program.Main");
+% entry("Program : Main");
 
+% use("Atom.kj");
 % use("Person.kj");
 % use("Std.kj");
 
@@ -10,17 +11,62 @@
 	~$ a = 1;
 	~$ b = 2;
 
-	~@ Main()
+	~@ Main(...)
 	{
 		$ c = Program:Add(Program:a, Program:b);
+		//Std:WriteLine(c);
 		% inject("dbgi :*$c->Int/___Data.___data");
 		% inject("dbgb $___NEW_LINE");
 
-		$ p = +Person("john", c);
+		$ p = +Person("john", c.Add(20));
+		//Std:WriteLine(p.age);
 		$ tmp = p.age;
 		% inject("dbgi :*$tmp->Int/___Data.___data");
 		% inject("dbgb $___NEW_LINE");
 		-p;
+
+		% inject("dbgb $___NEW_LINE");
+		
+		while(tmp.GreaterThan(10))
+		{
+			tmp = tmp.Sub(1);
+			//Std:WriteLine(tmp);
+			% inject("dbgi :*$tmp->Int/___Data.___data");
+			% inject("dbgb $___NEW_LINE");
+		}
+
+		% inject("dbgb $___NEW_LINE");
+		
+		for($ i = 0; i.LessThan(tmp); i.Add(1))
+		{
+			//Std:WriteLine(i);
+			% inject("dbgi :*$i->Int/___Data.___data");
+			% inject("dbgb $___NEW_LINE");
+		}
+
+		% inject("dbgb $___NEW_LINE");
+		
+		if(false)
+		{
+			tmp = 0;
+			//Std:WriteLine(tmp);
+			% inject("dbgi :*$tmp->Int/___Data.___data");
+			% inject("dbgb $___NEW_LINE");
+		}
+		else if(tmp.EqualTo(10))
+		{
+			tmp = 1;
+			//Std:WriteLine(tmp);
+			% inject("dbgi :*$tmp->Int/___Data.___data");
+			% inject("dbgb $___NEW_LINE");
+		}
+		else
+		{
+			tmp = 2;
+			//Std:WriteLine(tmp);
+			% inject("dbgi :*$tmp->Int/___Data.___data");
+			% inject("dbgb $___NEW_LINE");
+		}
 	}
 
 	~@ Add(a, b)
