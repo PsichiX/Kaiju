@@ -2,8 +2,8 @@
 
 class Std
 {
-	static method WriteLine(...)
+	static WriteLine(...)
 	{
-
+		
 	}
 }

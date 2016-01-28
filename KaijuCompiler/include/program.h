@@ -218,12 +218,17 @@ namespace Kaiju
                 virtual ~ControlFlowForeachLoop();
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p );
 
                 std::string iteratorId;
                 Value* collection;
                 Block* statements;
+
+            private:
+                static unsigned int s_uidGenerator;
+
+                unsigned int m_uid;
             };
 
             class ControlFlowCondition : public Convertible
@@ -400,6 +405,7 @@ namespace Kaiju
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output );
+                bool convertToISC_StructDef( std::stringstream& output );
                 void getFieldsList( std::vector< std::string >& out, bool isStatic = false );
                 virtual void setProgram( Program* p );
 

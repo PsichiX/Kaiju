@@ -3,5 +3,5 @@
 #use("Int.kj");
 #use("Float.kj");
 #use("String.kj");
-//#use("Array.kj");
+#use("Array.kj");
 //#use("Type.kj");

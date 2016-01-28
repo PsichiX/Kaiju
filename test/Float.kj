@@ -4,17 +4,17 @@ class Float
 {
 	#atomField(float, ___data, 1);
 
-	method Constructor()
+	Constructor()
 	{
 		#inject("movf :*$this->Float/___Data.___data $___ZEROF");
 	}
 
-	method Destructor()
+	Destructor()
 	{
 		#inject("movf :*$this->Float/___Data.___data $___ZEROF");
 	}
 
-	method Add(v)
+	Add(v)
 	{
 		#ensureType(v, Float);
 		var result = 0.0;
@@ -25,7 +25,7 @@ class Float
 		return result;
 	}
 
-	method Sub(v)
+	Sub(v)
 	{
 		#ensureType(v, Float);
 		var result = 0.0;
@@ -36,7 +36,7 @@ class Float
 		return result;
 	}
 
-	method Mul(v)
+	Mul(v)
 	{
 		#ensureType(v, Float);
 		var result = 0.0;
@@ -47,7 +47,7 @@ class Float
 		return result;
 	}
 
-	method Div(v)
+	Div(v)
 	{
 		#ensureType(v, Float);
 		var result = 0.0;

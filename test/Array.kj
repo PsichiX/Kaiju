@@ -1,0 +1,101 @@
+#use("Int.kj");
+
+class Array
+{
+	#atomField(address, ___data, 1);
+	#atomField(int, ___count, 1);
+
+	Constructor(count)
+	{
+		#inject("movi :*$this->Array/___Data.___count $___ZERO");
+		#inject("mova :*$this->Array/___Data.___data $___NULL");
+		this.Resize(count);
+	}
+
+	Destructor()
+	{
+		this.Clean();
+	}
+
+	Clean()
+	{
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 $___ZERO");
+		#inject("movi regi:1 :*$this->Array/___Data.___count");
+		#inject("movi regi:3 $___ONE");
+		#inject("mova $___ptr :*$this->Array/___Data.___data");
+		#inject("eadr 2 $___ptr $___NULL");
+		#inject("jifi 2 @___exit @___begin");
+		#inject("!jump ___begin");
+		#inject("tlti 2 0 1 ");
+		#inject("jifi 2 @___iteration @___end");
+		#inject("!jump ___iteration");
+		#inject("mfin :$___ptr");
+		#inject("mdel :$___ptr");
+		#inject("sadr $___ptr address 3");
+		#inject("inci 0 0");
+		#inject("goto @___begin");
+		#inject("!jump ___end");
+		#inject("movi :*$this->Array/___Data.___count $___ZERO");
+		#inject("del :*$this->Array/___Data.___data");
+		#inject("mova :*$this->Array/___Data.___data $___NULL");
+		#inject("!jump ___exit");
+	}
+
+	Resize(count)
+	{
+		#ensureType(count, Int);
+		this.Clean();
+		if(count.LessThan(0))
+			return;
+		#inject("!data address ___ptr 0");
+		#inject("movi :*$this->Array/___Data.___count :*$count->Int/___Data.___data");
+		#inject("movi regi:0 $___ZERO");
+		#inject("movi regi:1 :*$count->Int/___Data.___data");
+		#inject("movi regi:3 $___ONE");
+		#inject("new :*$this->Array/___Data.___data address 1");
+		#inject("mova $___ptr :*$this->Array/___Data.___data");
+		#inject("!jump ___begin");
+		#inject("tlti 2 0 1 ");
+		#inject("jifi 2 @___iteration @___end");
+		#inject("!jump ___iteration");
+		#inject("mobj :$___ptr");
+		#inject("sadr $___ptr address 3");
+		#inject("inci 0 0");
+		#inject("goto @___begin");
+		#inject("!jump ___end");
+	}
+
+	Count()
+	{
+		var result = 0;
+		#inject("movi :*$result->Int/___Data.___data :*$this->Array/___Data.___count");
+		return result;
+	}
+
+	Get(index)
+	{
+		#ensureType(index, Int);
+		if(index.OutOfRange(0, this.Count()))
+			return;
+		var result;
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$index->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Array/___Data.___data");
+		#inject("sadr $___ptr address 0");
+		#inject("mref $result :$___ptr");
+		return result;
+	}
+
+	Set(index, value)
+	{
+		#ensureType(index, Int);
+		if(index.OutOfRange(0, this.Count()))
+			return;
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$index->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Array/___Data.___data");
+		#inject("sadr $___ptr address 0");
+		#inject("mref :$___ptr $value");
+	}
+}

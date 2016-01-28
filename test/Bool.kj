@@ -4,22 +4,61 @@ class Bool
 {
 	#atomField(int, ___data, 1);
 
-	static method True()
+	Constructor()
+	{
+		#inject("movi :*$this->Bool/___Data.___data $___ZERO");
+	}
+
+	Destructor()
+	{
+		#inject("movi :*$this->Bool/___Data.___data $___ZERO");
+	}
+
+	static True()
 	{
 		return true;
 	}
 
-	static method False()
+	static False()
 	{
 		return false;
 	}
 
-	method Not()
+	Not()
 	{
-		var result = false;
-		#inject("movi regi:0 :*$result->Bool/___Data.___data");
-		#inject("not 0 0");
-		#inject("movi :*$result->Bool/___Data.___data regi:0");
-		return result;
+		#inject("movi regi:0 :*$this->Bool/___Data.___data");
+		#inject("jifi 0 @___passed @___failed");
+		#inject("!jump ___passed");
+		return false;
+		#inject("!jump ___failed");
+		return true;
+	}
+
+	And(v)
+	{
+		#ensureType(v, Bool);
+		#inject("movi regi:0 :*$this->Bool/___Data.___data");
+		#inject("jifi 0 @___passedA @___failed");
+		#inject("!jump ___passedA");
+		#inject("movi regi:0 :*$v->Bool/___Data.___data");
+		#inject("jifi 0 @___passedB @___failed");
+		#inject("!jump ___passedB");
+		return true;
+		#inject("!jump ___failed");
+		return false;
+	}
+
+	Or(v)
+	{
+		#ensureType(v, Bool);
+		#inject("movi regi:0 :*$this->Bool/___Data.___data");
+		#inject("jifi 0 @___passed @___failedA");
+		#inject("!jump ___failedA");
+		#inject("movi regi:0 :*$v->Bool/___Data.___data");
+		#inject("jifi 0 @___passed @___failedB");
+		#inject("!jump ___failedB");
+		return false;
+		#inject("!jump ___passed");
+		return true;
 	}
 }

@@ -177,6 +177,7 @@ namespace Kaiju
             output << "!data int ___ONE 1" << std::endl;
             output << "!data float ___ONEF 1.0" << std::endl;
             output << "!data bytes ___NEW_LINE 10, 0" << std::endl;
+            output << "!data int ___returnedState 0" << std::endl;
             output << "!data address ___valueL 0" << std::endl;
             output << "!data address ___valueR 0" << std::endl;
             for( auto& kv : constInts )
@@ -218,6 +219,8 @@ namespace Kaiju
             output << "!struct-def ___Atom" << std::endl;
             output << "!field address ___classMetaInfo 1" << std::endl;
             output << "!struct-end" << std::endl;
+            for( auto& kv : classes )
+                kv.second->convertToISC_StructDef( output );
             output << "!start" << std::endl;
             output << "#counter _jump_ 0" << std::endl;
             output << "#counter _goto_ 0" << std::endl;
@@ -320,6 +323,9 @@ namespace Kaiju
             output << "!data address ptr 0" << std::endl;
             output << "mpop $this" << std::endl;
             output << "popa $uid" << std::endl;
+            output << "mcnt regi:0 $this" << std::endl;
+            output << "jifi 0 @___notNull @___end" << std::endl;
+            output << "!jump ___notNull" << std::endl;
             output << "mova $ptr :*$this->Object/___Data.___classMetaInfo" << std::endl;
             output << "movi regi:0 :$ptr->___ClassMetaInfo.methodsCount" << std::endl;
             output << "mova $ptr :$ptr->___ClassMetaInfo.methods" << std::endl;
@@ -350,6 +356,9 @@ namespace Kaiju
             output << "!data address ptr 0" << std::endl;
             output << "mpop $this" << std::endl;
             output << "popa $uid" << std::endl;
+            output << "mcnt regi:0 $this" << std::endl;
+            output << "jifi 0 @___notNull @___end" << std::endl;
+            output << "!jump ___notNull" << std::endl;
             output << "mova $ptr :*$this->Object/___Data.___classMetaInfo" << std::endl;
             output << "movi regi:0 :$ptr->___ClassMetaInfo.fieldsCount" << std::endl;
             output << "mova $ptr :$ptr->___ClassMetaInfo.fields" << std::endl;
@@ -1061,6 +1070,7 @@ namespace Kaiju
         bool Program::Block::convertToISC( std::stringstream& output )
         {
             output << "!namespace ___scope" << m_uid << std::endl;
+            output << "!data int ___returnedState 0" << std::endl;
             for( auto v : variables )
             {
                 output << "!data address " << v << " 0" << std::endl;
@@ -1080,6 +1090,11 @@ namespace Kaiju
                 output << "mfin $" << v << std::endl;
                 output << "mdel $" << v << std::endl;
             }
+            output << "movi regi:0 $___returnedState" << std::endl;
+            output << "jifi 0 @___return @___pass" << std::endl;
+            output << "!jump ___return" << std::endl;
+            output << "ret" << std::endl;
+            output << "!jump ___pass" << std::endl;
             output << "!namespace-end" << std::endl;
             return true;
         }
@@ -1397,7 +1412,7 @@ namespace Kaiju
             output << "eadr 0 $Bool/type :*$___valueL->___Atom.___classMetaInfo" << std::endl;
             output << "jifi 0 @___good @___bad" << std::endl;
             output << "!jump ___bad" << std::endl;
-            output << "!data bytes ___message \"While loop condition is not type of Bool!\", 10, 0" << std::endl;
+            output << "!data bytes ___message \"While-loop condition is not type of Bool!\", 10, 0" << std::endl;
             output << "dbgb $___message" << std::endl;
             output << "mobj $___valueL" << std::endl;
             output << "mpsh $___valueL" << std::endl;
@@ -1584,7 +1599,7 @@ namespace Kaiju
                 output << "eadr 0 $Bool/type :*$___valueL->___Atom.___classMetaInfo" << std::endl;
                 output << "jifi 0 @___good @___bad" << std::endl;
                 output << "!jump ___bad" << std::endl;
-                output << "!data bytes ___message \"While loop condition is not type of Bool!\", 10, 0" << std::endl;
+                output << "!data bytes ___message \"For-loop condition is not type of Bool!\", 10, 0" << std::endl;
                 output << "dbgb $___message" << std::endl;
                 output << "mobj $___valueL" << std::endl;
                 output << "mpsh $___valueL" << std::endl;
@@ -1634,10 +1649,13 @@ namespace Kaiju
                 statements->setProgram( p );
         }
 
+        unsigned int Program::ControlFlowForeachLoop::s_uidGenerator = 0;
+
         Program::ControlFlowForeachLoop::ControlFlowForeachLoop( Program* p, ASTNode* n )
         : Convertible( "foreachLoop", p, n )
         , collection( 0 )
         , statements( 0 )
+        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "control_flow.foreach_statement" )
             {
@@ -1705,6 +1723,7 @@ namespace Kaiju
             iteratorId.clear();
             Delete( collection );
             Delete( statements );
+            m_uid = 0;
         }
 
         bool Program::ControlFlowForeachLoop::convertToPST( std::stringstream& output, int level )
@@ -1714,6 +1733,60 @@ namespace Kaiju
             output << "[" << program->nextUIDpst() << "]" << lvl << "-(foreachLoop.iterator)" << iteratorId << std::endl;
             collection->convertToPST( output, level + 1 );
             statements->convertToPST( output, level + 1 );
+            return true;
+        }
+
+        bool Program::ControlFlowForeachLoop::convertToISC( std::stringstream& output )
+        {
+            output << "!namespace ___foreach" << m_uid << std::endl;
+            output << "!data address " << iteratorId << " 0" << std::endl;
+            output << "!data address ___container 0" << std::endl;
+            output << "!data int ___iterator 0" << std::endl;
+            output << "!data int ___count 0" << std::endl;
+            output << "!data address ___current 0" << std::endl;
+            collection->convertToISC( output );
+            output << "mpop $___container" << std::endl;
+            output << "eadr 0 $Array/type :*$___valueL->___Atom.___classMetaInfo" << std::endl;
+            output << "jifi 0 @___goodType @___badType" << std::endl;
+            output << "!jump ___badType" << std::endl;
+            output << "!data bytes ___message \"Foreach-loop condition is not type of Array!\", 10, 0" << std::endl;
+            output << "dbgb $___message" << std::endl;
+            output << "mobj $___valueL" << std::endl;
+            output << "mpsh $___valueL" << std::endl;
+            output << "ret" << std::endl;
+            output << "!jump ___goodType" << std::endl;
+            output << "movi $___count :*$___container->Array/___Data.___count" << std::endl;
+            output << "movi regi:0 $___count" << std::endl;
+            output << "jifi 0 @___iteration @___end" << std::endl;
+            output << "!jump ___iteration" << std::endl;
+            output << "movi regi:0 $___iterator" << std::endl;
+            output << "movi regi:1 $___count" << std::endl;
+            output << "tlti 2 0 1" << std::endl;
+            output << "jifi 2 @___do @___end" << std::endl;
+            output << "!jump ___do" << std::endl;
+            output << "pshi $___iterator" << std::endl;
+            output << "call @___GET_INT_FROM_ATOM" << std::endl;
+            output << "mpsh $___container" << std::endl;
+            output << "pshi $___ONE" << std::endl;
+            output << "call @Array/Get" << std::endl;
+            output << "mpop $" << iteratorId << std::endl;
+            if( statements )
+            {
+                statements->convertToISC( output );
+                output << "mpop $___valueL" << std::endl;
+                output << "mfin $___valueL" << std::endl;
+                output << "mdel $___valueL" << std::endl;
+            }
+            output << "mfin $" << iteratorId << std::endl;
+            output << "mdel $" << iteratorId << std::endl;
+            output << "movi regi:0 $___iterator" << std::endl;
+            output << "inci 0 0" << std::endl;
+            output << "movi $___iterator regi:0" << std::endl;
+            output << "goto @___iteration" << std::endl;
+            output << "!jump ___end" << std::endl;
+            output << "mfin $___container" << std::endl;
+            output << "mdel $___container" << std::endl;
+            output << "!namespace-end" << std::endl;
             return true;
         }
 
@@ -1932,6 +2005,7 @@ namespace Kaiju
                 output << "mobj $___valueL" << std::endl;
                 output << "mpsh $___valueL" << std::endl;
             }
+            output << "movi $___returnedState $___ONE" << std::endl;
             output << "ret" << std::endl;
             return true;
         }
@@ -2113,15 +2187,8 @@ namespace Kaiju
                 appendError( n, "AST node is not type of class.method.definition_statement!" );
                 return;
             }
-            if( n->hasType( "class.method.prefix" ) )
-                isStatic = false;
-            else if( n->hasType( "class.method.prefix_static" ) )
+            if( n->hasType( "class.method.prefix_static" ) )
                 isStatic = true;
-            else
-            {
-                appendError( n, "Method definition does not specify if it's static or not!" );
-                return;
-            }
             if( !n->hasType( "identifier" ) )
             {
                 appendError( n, "Method definition does not have identifier!" );
@@ -2337,6 +2404,7 @@ namespace Kaiju
                 }
                 arguments.push_back( v );
             }
+            p->constantHash( std::hash< std::string >()( id ) );
             isValid = true;
         }
 
@@ -2915,15 +2983,6 @@ namespace Kaiju
                 output << "!data address ___METHOD_UID_" << kv.first << " " << kv.second->getUID() << std::endl;
                 output << "!data int ___METHOD_STATIC_" << kv.first << " " << (int)kv.second->isStatic << std::endl;
             }
-            output << "!struct-def ___Data" << std::endl;
-            output << "!field address ___classMetaInfo 1" << std::endl;
-            std::vector< std::string > fl;
-            getFieldsList( fl );
-            for( auto n : fl )
-                output << "!field address " << n << " 1" << std::endl;
-            for( auto& kv : atomFields )
-                output << "!field " << kv.second.first << " " << kv.first << " " << kv.second.second << std::endl;
-            output << "!struct-end" << std::endl;
             std::vector< std::string > sfl;
             getFieldsList( sfl, true );
             for( auto n : sfl )
@@ -3020,6 +3079,22 @@ namespace Kaiju
             output << "!namespace-end" << std::endl;
             output << "!namespace-end" << std::endl;
             output << "!exit" << std::endl;
+            return true;
+        }
+
+        bool Program::Class::convertToISC_StructDef( std::stringstream& output )
+        {
+            output << "!namespace " << id << std::endl;
+            output << "!struct-def ___Data" << std::endl;
+            output << "!field address ___classMetaInfo 1" << std::endl;
+            std::vector< std::string > fl;
+            getFieldsList( fl );
+            for( auto n : fl )
+                output << "!field address " << n << " 1" << std::endl;
+            for( auto& kv : atomFields )
+                output << "!field " << kv.second.first << " " << kv.first << " " << kv.second.second << std::endl;
+            output << "!struct-end" << std::endl;
+            output << "!namespace-end" << std::endl;
             return true;
         }
 

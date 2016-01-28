@@ -2,7 +2,6 @@
 
 #entry("Program : Main");
 
-#use("Atom.kj");
 #use("Person.kj");
 #use("Std.kj");
 
@@ -11,7 +10,7 @@ class Program
 	static var a = 1;
 	static var b = 2;
 
-	static method Main(...)
+	static Main(...)
 	{
 		var c = Program:Add(Program:a, Program:b);
 		//Std:WriteLine(c);
@@ -67,9 +66,22 @@ class Program
 			#inject("dbgi :*$tmp->Int/___Data.___data");
 			#inject("dbgb $___NEW_LINE");
 		}
+
+		#inject("dbgb $___NEW_LINE");
+		
+		var a = new Array(4);
+		a.Set(0, 1);
+		a.Set(1, 3);
+		a.Set(2, 3);
+		a.Set(3, 7);
+		foreach(v in a)
+		{
+			#inject("dbgi :*$v->Int/___Data.___data");
+			#inject("dbgb $___NEW_LINE");
+		}
 	}
 
-	static method Add(a, b)
+	static Add(a, b)
 	{
 		return a.Add(b);
 		// near future:

@@ -79,15 +79,14 @@ namespace Kaiju
         {
             namespace Method
             {
-                struct prefix : pegtl::string< 'm', 'e', 't', 'h', 'o', 'd' > {};
-                struct prefix_static : pegtl::seq< pegtl::string< 's', 't', 'a', 't', 'i', 'c' >, whitespaces_any, pegtl::string< 'm', 'e', 't', 'h', 'o', 'd' > > {};;
+                struct prefix_static : pegtl::string< 's', 't', 'a', 't', 'i', 'c' > {};;
                 namespace Definition
                 {
                     struct argument_list : pegtl::opt< identifier, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, identifier > > {};
                     struct argument_params : pegtl::string< '.', '.', '.' > {};
                     struct arguments : pegtl::seq< pegtl::one< '(' >, whitespaces_any, pegtl::sor< argument_params, argument_list >, whitespaces_any, pegtl::one< ')' > > {};
                 }
-                struct definition_statement : pegtl::seq< pegtl::sor< prefix, prefix_static>, whitespaces_any, identifier, whitespaces_any, Definition::arguments, whitespaces_any, block > {};
+                struct definition_statement : pegtl::seq< pegtl::opt< prefix_static>, whitespaces_any, identifier, whitespaces_any, Definition::arguments, whitespaces_any, block > {};
                 namespace Call
                 {
                     struct argument_list : pegtl::opt< value, pegtl::star< whitespaces_any, pegtl::one< ',' >, whitespaces_any, value > > {};

@@ -44,7 +44,6 @@ namespace Kaiju
             AST_GENERATOR_ACTION( Kaiju::Grammar::Variable::assignment );
             AST_GENERATOR_ACTION( Kaiju::Grammar::variable );
             AST_GENERATOR_ACTION( Kaiju::Grammar::block );
-            AST_GENERATOR_ACTION( Kaiju::Grammar::Class::Method::prefix );
             AST_GENERATOR_ACTION( Kaiju::Grammar::Class::Method::prefix_static );
             AST_GENERATOR_ACTION( Kaiju::Grammar::Class::Method::Definition::argument_list );
             AST_GENERATOR_ACTION( Kaiju::Grammar::Class::Method::Definition::argument_params );

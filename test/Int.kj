@@ -4,17 +4,17 @@ class Int
 {
 	#atomField(int, ___data, 1);
 
-	method Constructor()
+	Constructor()
 	{
 		#inject("movi :*$this->Int/___Data.___data $___ZERO");
 	}
 
-	method Destructor()
+	Destructor()
 	{
 		#inject("movi :*$this->Int/___Data.___data $___ZERO");
 	}
 
-	method Add(v)
+	Add(v)
 	{
 		#ensureType(v, Int);
 		var result = 0;
@@ -25,7 +25,7 @@ class Int
 		return result;
 	}
 
-	method Sub(v)
+	Sub(v)
 	{
 		#ensureType(v, Int);
 		var result = 0;
@@ -36,7 +36,7 @@ class Int
 		return result;
 	}
 
-	method Mul(v)
+	Mul(v)
 	{
 		#ensureType(v, Int);
 		var result = 0;
@@ -47,7 +47,7 @@ class Int
 		return result;
 	}
 
-	method Div(v)
+	Div(v)
 	{
 		#ensureType(v, Int);
 		var result = 0;
@@ -58,7 +58,7 @@ class Int
 		return result;
 	}
 
-	method GreaterThan(v)
+	GreaterThan(v)
 	{
 		#ensureType(v, Int);
 		var result = false;
@@ -69,7 +69,7 @@ class Int
 		return result;
 	}
 
-	method LessThan(v)
+	LessThan(v)
 	{
 		#ensureType(v, Int);
 		var result = false;
@@ -80,7 +80,7 @@ class Int
 		return result;
 	}
 
-	method EqualTo(v)
+	EqualTo(v)
 	{
 		#ensureType(v, Int);
 		var result = false;
@@ -89,5 +89,30 @@ class Int
 		#inject("teti 2 0 1");
 		#inject("movi :*$result->Bool/___Data.___data regi:2");
 		return result;
+	}
+
+	GreaterThanOrEqualTo(v)
+	{
+		return this.LessThan(v).Not();
+	}
+
+	LessThanOrEqualTo(v)
+	{
+		return this.GreaterThan(v).Not();
+	}
+
+	NotEqualTo(v)
+	{
+		return this.EqualTo(v).Not();
+	}
+
+	InRange(start, end)
+	{
+		return this.LessThan(end).And(this.GreaterThanOrEqualTo(start));
+	}
+
+	OutOfRange(start, end)
+	{
+		return this.LessThan(start).Or(this.GreaterThanOrEqualTo(end));
 	}
 }

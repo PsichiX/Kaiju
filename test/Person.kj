@@ -5,7 +5,7 @@ class Person
 	var name;
 	var age;
 
-	method Constructor(n, a)
+	Constructor(n, a)
 	{
 		#ensureType(n, String);
 		#ensureType(a, Int);
@@ -14,7 +14,7 @@ class Person
 		this.age = a;
 	}
 
-	method Destructor()
+	Destructor()
 	{
 	}
 }

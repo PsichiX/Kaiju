@@ -41,8 +41,7 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::Variable::assignment, "variable.assignment", true );
             REGISTER_TYPE( Kaiju::Grammar::variable, "variable", true );
             REGISTER_TYPE( Kaiju::Grammar::block, "block", true );
-            REGISTER_TYPE( Kaiju::Grammar::Class::Method::prefix, "class.method.prefix", true );
-            REGISTER_TYPE( Kaiju::Grammar::Class::Method::prefix_static, "class.method.prefix_static", true );
+            REGISTER_TYPE( Kaiju::Grammar::Class::Method::prefix_static, "class.method.prefix_static", false );
             REGISTER_TYPE( Kaiju::Grammar::Class::Method::Definition::argument_list, "class.method.definition.argument_list", true );
             REGISTER_TYPE( Kaiju::Grammar::Class::Method::Definition::argument_params, "class.method.definition.argument_params", false );
             REGISTER_TYPE( Kaiju::Grammar::Class::Method::definition_statement, "class.method.definition_statement", true );
