@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 #include "../include/program.h"
 #include "../include/std_extension.h"
 
@@ -42,7 +43,8 @@ namespace Kaiju
                             return;
                         }
                         if( d->id != "entry" &&
-                            d->id != "use" )
+                            d->id != "use" &&
+                            d->id != "library" )
                         {
                             std::stringstream ss;
                             ss << "Unexpected directive: " << d->id;
@@ -158,6 +160,9 @@ namespace Kaiju
             output << "[" << nextUIDpst() << "]" << lvl << "-(classes)" << std::endl;
             for( auto& kv : classes )
                 kv.second->convertToPST( output, level + 2 );
+            output << "[" << nextUIDpst() << "]" << lvl << "-(libraries)" << std::endl;
+            for( auto& kv : libraries )
+                output << "[" << nextUIDpst() << "]" << lvl << "--(" << kv.first << ")" << kv.second << std::endl;
             return true;
         }
 
@@ -175,9 +180,16 @@ namespace Kaiju
             output << "!data address ___NULL 0" << std::endl;
             output << "!data bytes ___NULLS 0" << std::endl;
             output << "!data int ___ONE 1" << std::endl;
+            output << "!data int ___TWO 2" << std::endl;
             output << "!data float ___ONEF 1.0" << std::endl;
+            output << "!data float ___TWOF 2.0" << std::endl;
             output << "!data bytes ___NEW_LINE 10, 0" << std::endl;
+            output << "!data int ___returnedScopeState 0" << std::endl;
+            output << "!data int ___breakedScopeState 0" << std::endl;
+            output << "!data int ___continuedScopeState 0" << std::endl;
             output << "!data int ___returnedState 0" << std::endl;
+            output << "!data int ___breakedState 0" << std::endl;
+            output << "!data int ___continuedState 0" << std::endl;
             output << "!data address ___valueL 0" << std::endl;
             output << "!data address ___valueR 0" << std::endl;
             for( auto& kv : constInts )
@@ -185,7 +197,41 @@ namespace Kaiju
             for( auto& kv : constFloats )
                 output << "!data float " << kv.second << " " << kv.first << std::endl;
             for( auto& kv : constStrings )
-                output << "!data bytes " << kv.second << " \"" << kv.first << "\", 0" << std::endl;
+            {
+                output << "!data bytes " << kv.second << " ";
+                for( size_t i = 0; i < kv.first.length(); ++i )
+                {
+                    char c = (char)kv.first[ i ];
+                    if( c == '\\' )
+                    {
+                        c = (char)kv.first[ ++i ];
+                        if( c == 'a' )
+                            c = '\a';
+                        else if( c == 'b' )
+                            c = '\b';
+                        else if( c == 'f' )
+                            c = '\f';
+                        else if( c == 'n' )
+                            c = '\n';
+                        else if( c == 'r' )
+                            c = '\r';
+                        else if( c == 't' )
+                            c = '\t';
+                        else if( c == 'v' )
+                            c = '\v';
+                        else if( c == '\\' )
+                            c = '\\';
+                        else if( c == '\'' )
+                            c = '\'';
+                        else if( c == '"' )
+                            c = '\"';
+                        else if( c == '?' )
+                            c = '\?';
+                    }
+                    output << (unsigned int)c << ", ";
+                }
+                output << "0" << std::endl;
+            }
             for( auto& kv : constHash )
                 output << "!data address " << kv.second << " " << kv.first << std::endl;
             for( auto& kv : classes )
@@ -231,10 +277,55 @@ namespace Kaiju
             for( auto& kv : classes )
                 kv.second->convertToISC( output );
             output << "!start" << std::endl;
+            output << "!jump ___GET_ARRAY_FROM_ARGUMENTS" << std::endl;
+            output << "!namespace ___funcGetArrayFromArguments" << std::endl;
+            output << "!data int size 0" << std::endl;
+            output << "!data int iterator 0" << std::endl;
+            output << "!data address this 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            output << "movi $iterator $___ZERO" << std::endl;
+            output << "popi $size" << std::endl;
+            output << "movi regi:0 $___ONE" << std::endl;
+            output << "mobj $this" << std::endl;
+            output << "mnew $this Array/___Data 0 @Array/___Finalizer" << std::endl;
+            output << "mova :*$this->Array/___Data.___classMetaInfo $Array/type" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "call @Array/___Creator" << std::endl;
+            output << "pshi $size" << std::endl;
+            output << "call @___GET_INT_FROM_ATOM" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "pshi $___ONE" << std::endl;
+            output << "call @Array/Constructor" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___valueL" << std::endl;
+            output << "mdel $___valueL" << std::endl;
+            output << "!jump ___argsTest" << std::endl;
+            output << "movi regi:0 $iterator" << std::endl;
+            output << "movi regi:1 $size" << std::endl;
+            output << "tlti 2 0 1" << std::endl;
+            output << "jifi 2 @___argsPassed @___argsDone" << std::endl;
+            output << "!jump ___argsPassed" << std::endl;
+            output << "pshi $iterator" << std::endl;
+            output << "call @___GET_INT_FROM_ATOM" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "pshi $___TWO" << std::endl;
+            output << "call @Array/Set" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___valueL" << std::endl;
+            output << "mdel $___valueL" << std::endl;
+            output << "movi regi:0 $iterator" << std::endl;
+            output << "inci 0 0" << std::endl;
+            output << "movi $iterator regi:0" << std::endl;
+            output << "goto @___argsTest" << std::endl;
+            output << "!jump ___argsDone" << std::endl;
+            output << "mpsh $this" << std::endl;
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
             output << "!jump ___GET_BOOL_FROM_ATOM" << std::endl;
             output << "!namespace ___funcGetBoolFromAtom" << std::endl;
             output << "!data int value 0" << std::endl;
             output << "!data address this 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
             output << "popi $value" << std::endl;
             output << "movi regi:0 $___ONE" << std::endl;
             output << "mobj $this" << std::endl;
@@ -243,7 +334,7 @@ namespace Kaiju
             output << "mpsh $this" << std::endl;
             output << "call @Bool/___Creator" << std::endl;
             output << "mpsh $this" << std::endl;
-            output << "pshi $" << constantInt( 0 ) << std::endl;
+            output << "pshi $___ZERO" << std::endl;
             output << "call @Bool/Constructor" << std::endl;
             output << "mpop $___valueL" << std::endl;
             output << "mfin $___valueL" << std::endl;
@@ -256,6 +347,7 @@ namespace Kaiju
             output << "!namespace ___funcGetIntFromAtom" << std::endl;
             output << "!data int value 0" << std::endl;
             output << "!data address this 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
             output << "popi $value" << std::endl;
             output << "movi regi:0 $___ONE" << std::endl;
             output << "mobj $this" << std::endl;
@@ -264,7 +356,7 @@ namespace Kaiju
             output << "mpsh $this" << std::endl;
             output << "call @Int/___Creator" << std::endl;
             output << "mpsh $this" << std::endl;
-            output << "pshi $" << constantInt( 0 ) << std::endl;
+            output << "pshi $___ZERO" << std::endl;
             output << "call @Int/Constructor" << std::endl;
             output << "mpop $___valueL" << std::endl;
             output << "mfin $___valueL" << std::endl;
@@ -277,6 +369,7 @@ namespace Kaiju
             output << "!namespace ___funcGetFloatFromAtom" << std::endl;
             output << "!data float value 0.0" << std::endl;
             output << "!data address this 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
             output << "popf $value" << std::endl;
             output << "movi regi:0 $___ONE" << std::endl;
             output << "mobj $this" << std::endl;
@@ -285,7 +378,7 @@ namespace Kaiju
             output << "mpsh $this" << std::endl;
             output << "call @Float/___Creator" << std::endl;
             output << "mpsh $this" << std::endl;
-            output << "pshi $" << constantInt( 0 ) << std::endl;
+            output << "pshi $___ZERO" << std::endl;
             output << "call @Float/Constructor" << std::endl;
             output << "mpop $___valueL" << std::endl;
             output << "mfin $___valueL" << std::endl;
@@ -297,8 +390,11 @@ namespace Kaiju
             output << "!jump ___GET_STRING_FROM_ATOM" << std::endl;
             output << "!namespace ___funcGetStringFromAtom" << std::endl;
             output << "!data address value 0" << std::endl;
+            output << "!data int length 0" << std::endl;
             output << "!data address this 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
             output << "popa $value" << std::endl;
+            output << "popi $length" << std::endl;
             output << "movi regi:0 $___ONE" << std::endl;
             output << "mobj $this" << std::endl;
             output << "mnew $this String/___Data 0 @String/___Finalizer" << std::endl;
@@ -306,13 +402,20 @@ namespace Kaiju
             output << "mpsh $this" << std::endl;
             output << "call @String/___Creator" << std::endl;
             output << "mpsh $this" << std::endl;
-            output << "pshi $" << constantInt( 0 ) << std::endl;
+            output << "pshi $___ZERO" << std::endl;
             output << "call @String/Constructor" << std::endl;
             output << "mpop $___valueL" << std::endl;
             output << "mfin $___valueL" << std::endl;
             output << "mdel $___valueL" << std::endl;
-            //output << "del :*$this->String/___Data.___data" << std::endl;
-            //output << "new :*$this->String/___Data.___data " << std::endl;
+            output << "!data address ___ptr 0" << std::endl;
+            output << "movi regi:0 $length" << std::endl;
+            output << "inci 0 0" << std::endl;
+            output << "del :*$this->String/___Data.___data" << std::endl;
+            output << "new :*$this->String/___Data.___data byte 0" << std::endl;
+            output << "mova $___ptr :*$this->String/___Data.___data" << std::endl;
+            output << "movb :$___ptr :$value 0" << std::endl;
+            output << "deci 0 0" << std::endl;
+            output << "movi :*$this->String/___Data.___size regi:0" << std::endl;
             output << "mpsh $this" << std::endl;
             output << "ret" << std::endl;
             output << "!namespace-end" << std::endl;
@@ -395,18 +498,53 @@ namespace Kaiju
             output << "ret" << std::endl;
             output << "!jump ___CODE_%_jump_%" << std::endl;
             output << "#increment _jump_" << std::endl;
+            output << "!namespace ___loadLibraries" << std::endl;
+            output << "!data address ___ptr 0" << std::endl;
+            output << "!data bytes ___messageFail0 \"Library: \", 0" << std::endl;
+            output << "!data bytes ___messageFail1 \" cannot be loaded from path: \", 0" << std::endl;
+            output << "ints LIBRARY" << std::endl;
+            unsigned int libstep = 0;
+            for( auto& kv : libraries )
+            {
+                output << "ptr $___ptr $" << constantString( kv.second ) << std::endl;
+                output << "psha $___ptr" << std::endl;
+                output << "psha $" << constantHash( std::hash< std::string >()( kv.first ) ) << std::endl;
+                output << "intc 0" << std::endl;
+                output << "popi regi:0" << std::endl;
+                output << "jifi 0 @___passed" << libstep << " @___failed" << libstep << std::endl;
+                output << "!jump ___failed" << libstep << std::endl;
+                output << "dbgb $___messageFail0" << std::endl;
+                output << "dbgb $" << constantString( kv.first ) << std::endl;
+                output << "dbgb $___messageFail1" << std::endl;
+                output << "dbgb $" << constantString( kv.second ) << std::endl;
+                output << "dbgb $___NEW_LINE" << std::endl;
+                output << "!jump ___passed" << libstep << std::endl;
+                ++libstep;
+            }
+            output << "!namespace-end" << std::endl;
             if( !entryPoint.empty() )
             {
                 // TODO: convert program arguments to array and push on stack (external data/stack).
-                output << "mpsh $___NULL" << std::endl;
+                output << "!data address ___temp 0" << std::endl;
+                output << "mobj $___temp" << std::endl;
+                output << "mpsh $___temp" << std::endl;
                 output << "pshi $___ZERO" << std::endl;
                 size_t f = entryPoint.find( ':' );
                 output << "call @" << (f == std::string::npos ? entryPoint : string_trim(entryPoint.substr( 0, f )) + "/" + string_trim(entryPoint.substr( f + 1 ))) << std::endl;
-                output << "mpop $___valueL" << std::endl;
-                output << "mfin $___valueL" << std::endl;
-                output << "mdel $___valueL" << std::endl;
+                output << "mpop $___temp" << std::endl;
+                output << "mfin $___temp" << std::endl;
+                output << "mdel $___temp" << std::endl;
                 // TODO: pop returned value from stack and set it as application exit code (external data/stack).
             }
+            output << "!namespace ___unloadLibraries" << std::endl;
+            output << "!data address ___ptr 0" << std::endl;
+            output << "ints LIBRARY" << std::endl;
+            for( auto& kv : libraries )
+            {
+                output << "psha $" << constantHash( std::hash< std::string >()( kv.first ) ) << std::endl;
+                output << "intc 1" << std::endl;
+            }
+            output << "!namespace-end" << std::endl;
             output << "!jump ___PROGRAM_EXIT" << std::endl;
             for( auto& kv : classes )
             {
@@ -595,6 +733,18 @@ namespace Kaiju
                 kv.second->setProgram( this );
             }
             p->classes.clear();
+            for( auto& kv : p->libraries )
+            {
+                if( libraries.count( kv.first ) && libraries[ kv.first ] != p->libraries[ kv.first ] )
+                {
+                    std::stringstream ss;
+                    ss << "Duplicate of library with different paths found during programs absorbing: " << kv.first;
+                    appendError( 0, ss.str() );
+                    return false;
+                }
+                libraries[ kv.first ] = kv.second;
+            }
+            p->libraries.clear();
             return true;
         }
 
@@ -603,11 +753,8 @@ namespace Kaiju
             return classes.count( id ) ? classes[ id ] : 0;
         }
 
-        unsigned int Program::Directive::s_uidGenerator = 0;
-
         Program::Directive::Directive( Program* p, ASTNode* n, Convertible* c )
         : Convertible( "directive", p, n )
-        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "directive.statement" )
             {
@@ -757,6 +904,37 @@ namespace Kaiju
                     return;
                 }
             }
+            else if( id == "library" )
+            {
+                if( arguments.size() != 2 )
+                {
+                    appendError( n, "Library directive does not have exactly two argument!" );
+                    return;
+                }
+                if( arguments[ 0 ]->type != Value::T_IDENTIFIER )
+                {
+                    appendError( n, "Library directive first argument is not type of identifier!" );
+                    return;
+                }
+                if( arguments[ 1 ]->type != Value::T_STRING )
+                {
+                    appendError( n, "Library directive second argument is not type of string!" );
+                    return;
+                }
+                std::string libid = arguments[ 1 ]->id;
+                std::string libpath = program->constantStringValue( arguments[ 1 ]->id );
+                program->constantHash( std::hash< std::string >()( libid ) );
+                program->constantString( libid );
+                program->constantString( libpath );
+                if( program->libraries.count( libid ) )
+                {
+                    std::stringstream ss;
+                    ss << "Library is already registered: " << libid;
+                    appendError( n, ss.str() );
+                    return;
+                }
+                program->libraries[ libid ] = libpath;
+            }
             else
             {
                 appendError( n, "Unknown directive!" );
@@ -771,7 +949,6 @@ namespace Kaiju
             for( auto a : arguments )
                 Delete( a );
             arguments.clear();
-            m_uid = 0;
         }
 
         bool Program::Directive::convertToPST( std::stringstream& output, int level )
@@ -791,7 +968,7 @@ namespace Kaiju
             {
                 std::string vid = arguments[ 0 ]->id;
                 std::string tid = arguments[ 1 ]->id;
-                output << "!namespace ___ensureType" << m_uid << std::endl;
+                output << "!namespace ___ensureType" << program->nextUIDisc() << std::endl;
                 output << "eadr 0 $" << tid << "/type :*$" << vid << "->___Atom.___classMetaInfo" << std::endl;
                 output << "jifi 0 @___good @___bad" << std::endl;
                 output << "!jump ___bad" << std::endl;
@@ -828,11 +1005,6 @@ namespace Kaiju
             }
             if( n->hasType( "variable.declaration" ) )
             {
-                if( !n->hasType( "variable.declaration" ) )
-                {
-                    appendError( n, "Variable does not have declaration!" );
-                    return;
-                }
                 ASTNode* nd = n->findByType( "variable.declaration" );
                 if( nd->hasType( "variable.prefix" ) )
                     isStatic = false;
@@ -857,11 +1029,6 @@ namespace Kaiju
             }
             else if( n->hasType( "variable.assignment" ) )
             {
-                if( !n->hasType( "variable.assignment" ) )
-                {
-                    appendError( n, "Variable does not have assignment!" );
-                    return;
-                }
                 ASTNode* na = n->findByType( "variable.assignment" );
                 if( na->nodes[ 0 ].type != "value" )
                 {
@@ -971,20 +1138,27 @@ namespace Kaiju
         {
             if( type == T_DECLARATION_ASSIGNMENT && valueR )
             {
+                output << "!namespace ___varDeclAssign" << program->nextUIDisc() << std::endl;
+                output << "!data address ___valueR 0" << std::endl;
                 valueR->convertToISC( output );
                 output << "mpop $___valueR" << std::endl;
                 output << "mref $" << id << " $___valueR" << std::endl;
                 output << "mfin $___valueR" << std::endl;
                 output << "mdel $___valueR" << std::endl;
+                output << "!namespace-end" << std::endl;
             }
             else if(type == T_ASSIGNMENT && valueL && valueR )
             {
+                output << "!namespace ___varAssign" << program->nextUIDisc() << std::endl;
+                output << "!data address ___valueL 0" << std::endl;
+                output << "!data address ___valueR 0" << std::endl;
                 valueL->convertToISC( output, 0, true );
                 valueR->convertToISC( output );
                 output << "mpop $___valueR $___valueL" << std::endl;
                 output << "mref $___valueL $___valueR" << std::endl;
                 output << "mfin $___valueR" << std::endl;
                 output << "mdel $___valueR" << std::endl;
+                output << "!namespace-end" << std::endl;
             }
             return true;
         }
@@ -998,11 +1172,8 @@ namespace Kaiju
                 valueR->setProgram( p );
         }
 
-        unsigned int Program::Block::s_uidGenerator = 0;
-
         Program::Block::Block( Program* p, ASTNode* n, bool oneStatement )
         : Convertible( "block", p, n )
-        , m_uid( s_uidGenerator++ )
         {
             if( oneStatement )
             {
@@ -1040,7 +1211,6 @@ namespace Kaiju
 
         Program::Block::Block( Program* p )
         : Convertible( "block", p, 0 )
-        , m_uid( s_uidGenerator++ )
         {
             isValid = true;
         }
@@ -1051,7 +1221,6 @@ namespace Kaiju
             for( auto s : statements )
                 Delete( s );
             statements.clear();
-            m_uid = 0;
         }
 
         bool Program::Block::convertToPST( std::stringstream& output, int level )
@@ -1069,8 +1238,15 @@ namespace Kaiju
 
         bool Program::Block::convertToISC( std::stringstream& output )
         {
-            output << "!namespace ___scope" << m_uid << std::endl;
+            unsigned int uid = program->nextUIDisc();
+            output << "!namespace ___scope" << uid << std::endl;
             output << "!data int ___returnedState 0" << std::endl;
+            output << "!data int ___breakedState 0" << std::endl;
+            output << "!data int ___continuedState 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            output << "movi $___returnedState $___ZERO" << std::endl;
+            output << "movi $___breakedState $___ZERO" << std::endl;
+            output << "movi $___continuedState $___ZERO" << std::endl;
             for( auto v : variables )
             {
                 output << "!data address " << v << " 0" << std::endl;
@@ -1080,7 +1256,19 @@ namespace Kaiju
             output << "goto @___scopeExit" << std::endl;
             output << "!jump ___scopeStart" << std::endl;
             for( auto s : statements )
-                s->convertToISC( output );
+            {
+                if( s->getType() == "value" ||
+                    s->getType() == "methodCall" ||
+                    s->getType() == "library" )
+                {
+                    s->convertToISC( output );
+                    output << "mpop $___valueL" << std::endl;
+                    output << "mfin $___valueL" << std::endl;
+                    output << "mdel $___valueL" << std::endl;
+                }
+                else
+                    s->convertToISC( output );
+            }
             output << "mobj $___valueL" << std::endl;
             output << "mpsh $___valueL" << std::endl;
             output << "ret" << std::endl;
@@ -1091,10 +1279,20 @@ namespace Kaiju
                 output << "mdel $" << v << std::endl;
             }
             output << "movi regi:0 $___returnedState" << std::endl;
-            output << "jifi 0 @___return @___pass" << std::endl;
+            output << "jifi 0 @___return @___passBreak" << std::endl;
             output << "!jump ___return" << std::endl;
-            output << "ret" << std::endl;
-            output << "!jump ___pass" << std::endl;
+            output << "movi $___returnedScopeState $___ONE" << std::endl;
+            output << "!jump ___passBreak" << std::endl;
+            output << "movi regi:0 $___breakedState" << std::endl;
+            output << "jifi 0 @___break @___passContinue" << std::endl;
+            output << "!jump ___break" << std::endl;
+            output << "movi $___breakedScopeState $___ONE" << std::endl;
+            output << "!jump ___passContinue" << std::endl;
+            output << "movi regi:0 $___continuedState" << std::endl;
+            output << "jifi 0 @___continue @___passEnd" << std::endl;
+            output << "!jump ___continue" << std::endl;
+            output << "movi $___continuedScopeState $___ONE" << std::endl;
+            output << "!jump ___passEnd" << std::endl;
             output << "!namespace-end" << std::endl;
             return true;
         }
@@ -1256,6 +1454,17 @@ namespace Kaiju
                 }
                 statements.push_back( c );
             }
+            else if( n->hasType( "library_call" ) )
+            {
+                LibraryCall* c = new LibraryCall( program, n->findByType( "library_call" ) );
+                if( !c->isValid )
+                {
+                    appendError( c );
+                    Delete( c );
+                    return false;
+                }
+                statements.push_back( c );
+            }
             else if( n->hasType( "value" ) )
             {
                 Value* v = new Value( program, n->findByType( "value" ) );
@@ -1269,7 +1478,7 @@ namespace Kaiju
             }
             else
             {
-                appendError( n, "AST node is not either a code block, directive statement, variable statement, object destruction, while-loop, for-loop, foreach-loop, condition statement, return statement, continue statement, break statement, method call or value expression!" );
+                appendError( n, "AST node is not either a code block, directive statement, variable statement, object destruction, while-loop, for-loop, foreach-loop, condition statement, return statement, continue statement, break statement, method call, library call or value expression!" );
                 return false;
             }
             return true;
@@ -1315,11 +1524,14 @@ namespace Kaiju
 
         bool Program::ObjectDestruction::convertToISC( std::stringstream& output )
         {
+            output << "!namespace ___objectDestruction" << program->nextUIDisc() << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
             if( value )
                 value->convertToISC( output, 0, true );
             output << "mpop $___valueL" << std::endl;
             output << "mfin $___valueL" << std::endl;
             output << "mder $___valueL" << std::endl;
+            output << "!namespace-end" << std::endl;
             return true;
         }
 
@@ -1330,13 +1542,10 @@ namespace Kaiju
                 value->setProgram( p );
         }
 
-        unsigned int Program::ControlFlowWhileLoop::s_uidGenerator = 0;
-
         Program::ControlFlowWhileLoop::ControlFlowWhileLoop( Program* p, ASTNode* n )
         : Convertible( "whileLoop", p, n )
         , condition( 0 )
         , statements( 0 )
-        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "control_flow.while_statement" )
             {
@@ -1390,7 +1599,6 @@ namespace Kaiju
         {
             Delete( condition );
             Delete( statements );
-            m_uid = 0;
         }
 
         bool Program::ControlFlowWhileLoop::convertToPST( std::stringstream& output, int level )
@@ -1404,7 +1612,11 @@ namespace Kaiju
 
         bool Program::ControlFlowWhileLoop::convertToISC( std::stringstream& output )
         {
-            output << "!namespace ___while" << m_uid << std::endl;
+            output << "!namespace ___while" << program->nextUIDisc() << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            output << "!data int ___returnedScopeState 0" << std::endl;
+            output << "!data int ___breakedScopeState 0" << std::endl;
+            output << "!data int ___continuedScopeState 0" << std::endl;
             output << "!jump ___check" << std::endl;
             if( condition )
                 condition->convertToISC( output );
@@ -1422,10 +1634,41 @@ namespace Kaiju
             output << "jifi 0 @___do @___end" << std::endl;
             output << "!jump ___do" << std::endl;
             if( statements )
+            {
+                output << "movi $___returnedScopeState $___ZERO" << std::endl;
+                output << "movi $___breakedScopeState $___ZERO" << std::endl;
+                output << "movi $___continuedScopeState $___ZERO" << std::endl;
                 statements->convertToISC( output );
-            output << "mpop $___valueL" << std::endl;
-            output << "mfin $___valueL" << std::endl;
-            output << "mdel $___valueL" << std::endl;
+
+                output << "movi regi:0 $___returnedScopeState" << std::endl;
+                output << "jifi 0 @___return @___notreturn" << std::endl;
+                output << "!jump ___return" << std::endl;
+                output << "movi $___returnedState $___ONE" << std::endl;
+                output << "ret" << std::endl;
+                output << "!jump ___notreturn" << std::endl;
+
+                output << "movi regi:0 $___breakedScopeState" << std::endl;
+                output << "jifi 0 @___break @___notbreak" << std::endl;
+                output << "!jump ___break" << std::endl;
+                output << "mpop $___valueL" << std::endl;
+                output << "mfin $___valueL" << std::endl;
+                output << "mdel $___valueL" << std::endl;
+                output << "goto @___end" << std::endl;
+                output << "!jump ___notbreak" << std::endl;
+
+                output << "movi regi:0 $___continuedScopeState" << std::endl;
+                output << "jifi 0 @___continue @___notcontinue" << std::endl;
+                output << "!jump ___continue" << std::endl;
+                output << "mpop $___valueL" << std::endl;
+                output << "mfin $___valueL" << std::endl;
+                output << "mdel $___valueL" << std::endl;
+                output << "goto @___check" << std::endl;
+                output << "!jump ___notcontinue" << std::endl;
+
+                output << "mpop $___valueL" << std::endl;
+                output << "mfin $___valueL" << std::endl;
+                output << "mdel $___valueL" << std::endl;
+            }
             output << "goto @___check" << std::endl;
             output << "!jump ___end" << std::endl;
             output << "!namespace-end" << std::endl;
@@ -1441,15 +1684,12 @@ namespace Kaiju
                 statements->setProgram( p );
         }
 
-        unsigned int Program::ControlFlowForLoop::s_uidGenerator = 0;
-
         Program::ControlFlowForLoop::ControlFlowForLoop( Program* p, ASTNode* n )
         : Convertible( "forLoop", p, n )
         , init( 0 )
         , condition( 0 )
         , iteration( 0 )
         , statements( 0 )
-        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "control_flow.for_statement" )
             {
@@ -1559,7 +1799,6 @@ namespace Kaiju
             Delete( condition );
             Delete( iteration );
             Delete( statements );
-            m_uid = 0;
         }
 
         bool Program::ControlFlowForLoop::convertToPST( std::stringstream& output, int level )
@@ -1581,7 +1820,9 @@ namespace Kaiju
 
         bool Program::ControlFlowForLoop::convertToISC( std::stringstream& output )
         {
-            output << "!namespace ___for" << m_uid << std::endl;
+            output << "!namespace ___for" << program->nextUIDisc() << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            output << "!data int ___returnedScopeState 0" << std::endl;
             if( init )
             {
                 if( !init->id.empty() )
@@ -1611,7 +1852,14 @@ namespace Kaiju
             }
             if( statements )
             {
+                output << "movi $___returnedScopeState $___ZERO" << std::endl;
                 statements->convertToISC( output );
+                output << "movi regi:0 $___returnedScopeState" << std::endl;
+                output << "jifi 0 @___return @___notreturn" << std::endl;
+                output << "!jump ___return" << std::endl;
+                output << "movi $___returnedState $___ONE" << std::endl;
+                output << "ret" << std::endl;
+                output << "!jump ___notreturn" << std::endl;
                 output << "mpop $___valueL" << std::endl;
                 output << "mfin $___valueL" << std::endl;
                 output << "mdel $___valueL" << std::endl;
@@ -1649,13 +1897,10 @@ namespace Kaiju
                 statements->setProgram( p );
         }
 
-        unsigned int Program::ControlFlowForeachLoop::s_uidGenerator = 0;
-
         Program::ControlFlowForeachLoop::ControlFlowForeachLoop( Program* p, ASTNode* n )
         : Convertible( "foreachLoop", p, n )
         , collection( 0 )
         , statements( 0 )
-        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "control_flow.foreach_statement" )
             {
@@ -1723,7 +1968,6 @@ namespace Kaiju
             iteratorId.clear();
             Delete( collection );
             Delete( statements );
-            m_uid = 0;
         }
 
         bool Program::ControlFlowForeachLoop::convertToPST( std::stringstream& output, int level )
@@ -1738,15 +1982,18 @@ namespace Kaiju
 
         bool Program::ControlFlowForeachLoop::convertToISC( std::stringstream& output )
         {
-            output << "!namespace ___foreach" << m_uid << std::endl;
+            output << "!namespace ___foreach" << program->nextUIDisc() << std::endl;
             output << "!data address " << iteratorId << " 0" << std::endl;
             output << "!data address ___container 0" << std::endl;
             output << "!data int ___iterator 0" << std::endl;
             output << "!data int ___count 0" << std::endl;
             output << "!data address ___current 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            output << "!data int ___returnedScopeState 0" << std::endl;
+            output << "movi $___iterator $___ZERO" << std::endl;
             collection->convertToISC( output );
             output << "mpop $___container" << std::endl;
-            output << "eadr 0 $Array/type :*$___valueL->___Atom.___classMetaInfo" << std::endl;
+            output << "eadr 0 $Array/type :*$___container->___Atom.___classMetaInfo" << std::endl;
             output << "jifi 0 @___goodType @___badType" << std::endl;
             output << "!jump ___badType" << std::endl;
             output << "!data bytes ___message \"Foreach-loop condition is not type of Array!\", 10, 0" << std::endl;
@@ -1772,7 +2019,14 @@ namespace Kaiju
             output << "mpop $" << iteratorId << std::endl;
             if( statements )
             {
+                output << "movi $___returnedScopeState $___ZERO" << std::endl;
                 statements->convertToISC( output );
+                output << "movi regi:0 $___returnedScopeState" << std::endl;
+                output << "jifi 0 @___return @___notreturn" << std::endl;
+                output << "!jump ___return" << std::endl;
+                output << "movi $___returnedState $___ONE" << std::endl;
+                output << "ret" << std::endl;
+                output << "!jump ___notreturn" << std::endl;
                 output << "mpop $___valueL" << std::endl;
                 output << "mfin $___valueL" << std::endl;
                 output << "mdel $___valueL" << std::endl;
@@ -1799,11 +2053,8 @@ namespace Kaiju
                 statements->setProgram( p );
         }
 
-        unsigned int Program::ControlFlowCondition::s_uidGenerator = 0;
-
         Program::ControlFlowCondition::ControlFlowCondition( Program* p, ASTNode* n )
         : Convertible( "condition", p, n )
-        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "control_flow.condition_statement" )
             {
@@ -1885,7 +2136,6 @@ namespace Kaiju
                 Delete( kv.second );
             }
             stages.clear();
-            m_uid = 0;
         }
 
         bool Program::ControlFlowCondition::convertToPST( std::stringstream& output, int level )
@@ -1906,8 +2156,12 @@ namespace Kaiju
         bool Program::ControlFlowCondition::convertToISC( std::stringstream& output )
         {
             unsigned int step = 0;
-            output << "!namespace ___condition" << m_uid << std::endl;
+            output << "!namespace ___condition" << program->nextUIDisc() << std::endl;
             output << "!data bytes ___message \"Condition is not type of Bool!\", 10, 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            output << "!data int ___returnedScopeState 0" << std::endl;
+            output << "!data int ___breakedScopeState 0" << std::endl;
+            output << "!data int ___continuedScopeState 0" << std::endl;
             for( auto s : stages )
             {
                 if( s.first )
@@ -1928,7 +2182,28 @@ namespace Kaiju
                 }
                 if( s.second )
                 {
+                    output << "movi $___returnedScopeState $___ZERO" << std::endl;
+                    output << "movi $___breakedScopeState $___ZERO" << std::endl;
+                    output << "movi $___continuedScopeState $___ZERO" << std::endl;
                     s.second->convertToISC( output );
+                    output << "movi regi:0 $___returnedScopeState" << std::endl;
+                    output << "jifi 0 @___return" << step << " @___notreturn" << step << std::endl;
+                    output << "!jump ___return" << step << std::endl;
+                    output << "movi $___returnedState $___ONE" << std::endl;
+                    output << "ret" << std::endl;
+                    output << "!jump ___notreturn" << step << std::endl;
+                    output << "movi regi:0 $___breakedScopeState" << std::endl;
+                    output << "jifi 0 @___break" << step << " @___notbreak" << step << std::endl;
+                    output << "!jump ___break" << step << std::endl;
+                    output << "movi $___breakedState $___ONE" << std::endl;
+                    output << "ret" << std::endl;
+                    output << "!jump ___notbreak" << step << std::endl;
+                    output << "movi regi:0 $___continuedScopeState" << std::endl;
+                    output << "jifi 0 @___continue" << step << " @___notcontinue" << step << std::endl;
+                    output << "!jump ___continue" << step << std::endl;
+                    output << "movi $___continuedState $___ONE" << std::endl;
+                    output << "ret" << std::endl;
+                    output << "!jump ___notcontinue" << step << std::endl;
                     output << "mpop $___valueL" << std::endl;
                     output << "mfin $___valueL" << std::endl;
                     output << "mdel $___valueL" << std::endl;
@@ -1992,6 +2267,9 @@ namespace Kaiju
 
         bool Program::ControlFlowReturn::convertToISC( std::stringstream& output )
         {
+            output << "!namespace ___return" << program->nextUIDisc() << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            output << "!data address ___valueR 0" << std::endl;
             if( value )
             {
                 value->convertToISC( output );
@@ -2007,6 +2285,7 @@ namespace Kaiju
             }
             output << "movi $___returnedState $___ONE" << std::endl;
             output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
             return true;
         }
 
@@ -2035,6 +2314,18 @@ namespace Kaiju
             return true;
         }
 
+        bool Program::ControlFlowContinue::convertToISC( std::stringstream& output )
+        {
+            output << "!namespace ___continue" << program->nextUIDisc() << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            output << "mobj $___valueL" << std::endl;
+            output << "mpsh $___valueL" << std::endl;
+            output << "movi $___continuedState $___ONE" << std::endl;
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
+            return true;
+        }
+
         Program::ControlFlowBreak::ControlFlowBreak( Program* p, ASTNode* n )
         : Convertible( "break", p, n )
         {
@@ -2050,6 +2341,18 @@ namespace Kaiju
         {
             std::string lvl( level, '-' );
             output << "[" << program->nextUIDpst() << "]" << lvl << "(break)" << std::endl;
+            return true;
+        }
+
+        bool Program::ControlFlowBreak::convertToISC( std::stringstream& output )
+        {
+            output << "!namespace ___break" << program->nextUIDisc() << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            output << "mobj $___valueL" << std::endl;
+            output << "mpsh $___valueL" << std::endl;
+            output << "movi $___breakedState $___ONE" << std::endl;
+            output << "ret" << std::endl;
+            output << "!namespace-end" << std::endl;
             return true;
         }
 
@@ -2232,6 +2535,7 @@ namespace Kaiju
             statements = b;
             m_uid = std::hash< std::string >()( id );
             p->constantHash( m_uid );
+            p->constantInt( arguments.size() );
             isValid = true;
         }
 
@@ -2277,23 +2581,10 @@ namespace Kaiju
             output << "!jump " << id << std::endl;
             output << "!namespace " << id << std::endl;
             output << "!data int ___argumentsSize " << arguments.size() << std::endl;
-            if( argumentsParams )
+            output << "!data address arguments 0" << std::endl;
+            if( !argumentsParams)
             {
-                output << "popi $___argumentsSize" << std::endl;
-                output << "movi regi:0 $___argumentsSize" << std::endl;
-                // TODO: create array of arguments here
-                output << "!namespace ___argsLoop" << std::endl;
-                output << "!jump ___argsTest" << std::endl;
-                output << "jifi 0 @___argsPassed @___argsFailed" << std::endl;
-                output << "!jump ___argsPassed" << std::endl;
-                output << "mpop $___valueL" << std::endl;
-                output << "deci 0 0" << std::endl;
-                output << "goto @___argsTest" << std::endl;
-                output << "!jump ___argsFailed" << std::endl;
-                output << "!namespace-end" << std::endl;
-            }
-            else
-            {
+                output << "mobj $arguments" << std::endl;
                 output << "popi regi:0" << std::endl;
                 output << "movi regi:1 $___argumentsSize" << std::endl;
                 output << "teti 2 0 1" << std::endl;
@@ -2311,7 +2602,8 @@ namespace Kaiju
                 output << "ret" << std::endl;
                 output << "!jump ___argumentsCheckPassed" << std::endl;
             }
-
+            else
+                output << "popi $___argumentsSize" << std::endl;
             output << "!data address this 0" << std::endl;
             if( !arguments.empty() )
             {
@@ -2325,10 +2617,23 @@ namespace Kaiju
             }
             else
                 output << "mpop $this" << std::endl;
+            if( argumentsParams )
+            {
+                output << "pshi $___argumentsSize" << std::endl;
+                output << "call @___GET_ARRAY_FROM_ARGUMENTS" << std::endl;
+                output << "mpop $arguments" << std::endl;
+            }
             if( isStatic )
                 output << "mobj $this" << std::endl;
             if( statements )
                 statements->convertToISC( output );
+            if( isStatic )
+            {
+                output << "mfin $this" << std::endl;
+                output << "mdel $this" << std::endl;
+            }
+            output << "mfin $arguments" << std::endl;
+            output << "mdel $arguments" << std::endl;
             output << "ret" << std::endl;
             output << "!namespace-end" << std::endl;
             return true;
@@ -2341,11 +2646,8 @@ namespace Kaiju
                 statements->setProgram( p );
         }
 
-        unsigned int Program::Method::Call::s_uidGenerator = 0;
-
         Program::Method::Call::Call( Program* p, ASTNode* n )
         : Convertible( "methodCall", p, n )
-        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "class.method.call" )
             {
@@ -2405,6 +2707,7 @@ namespace Kaiju
                 arguments.push_back( v );
             }
             p->constantHash( std::hash< std::string >()( id ) );
+            p->constantInt( arguments.size() );
             isValid = true;
         }
 
@@ -2415,7 +2718,6 @@ namespace Kaiju
             for( auto a : arguments )
                 Delete( a );
             arguments.clear();
-            m_uid = 0;
         }
 
         bool Program::Method::Call::convertToPST( std::stringstream& output, int level )
@@ -2433,8 +2735,9 @@ namespace Kaiju
         {
             if( isConstructor )
             {
-                output << "!namespace ___objectConstruct" << m_uid << std::endl;
+                output << "!namespace ___objectConstruct" << program->nextUIDisc() << std::endl;
                 output << "!data address ___this 0" << std::endl;
+                output << "!data address ___valueL 0" << std::endl;
                 output << "mobj $___this" << std::endl;
                 output << "movi regi:0 $___ONE" << std::endl;
                 output << "mnew $___this " << id << "/___Data 0 @" << id << "/___Finalizer" << std::endl;
@@ -2455,38 +2758,41 @@ namespace Kaiju
             }
             if( classId.empty() )
             {
-                output << "!namespace ___methodCall" << m_uid << std::endl;
-                output << "!data address ___mcThis 0" << std::endl;
-                output << "!data address ___mcAddr 0" << std::endl;
-                output << "mpop $___mcThis" << std::endl;
+                output << "!namespace ___methodCall" << program->nextUIDisc() << std::endl;
+                output << "!data address ___this 0" << std::endl;
+                output << "!data address ___addr 0" << std::endl;
+                output << "mpop $___this" << std::endl;
                 output << "psha $" << program->constantHash( std::hash< std::string >()( id ) ) << std::endl;
-                output << "mpsh $___mcThis" << std::endl;
+                output << "mpsh $___this" << std::endl;
                 output << "call @___FIND_HASHED_METHOD_OF" << std::endl;
-                output << "popi $___mcAddr" << std::endl;
-                output << "movi regi:0 $___mcAddr" << std::endl;
+                output << "popi $___addr" << std::endl;
+                output << "movi regi:0 $___addr" << std::endl;
                 output << "jifi 0 @___addressCheckPassed @___addressCheckFailed" << std::endl;
                 output << "!jump ___addressCheckFailed" << std::endl;
                 output << "!data bytes ___addressCheckFailedMessage \"Method: " << id << " was not found!\", 10, 0" << std::endl;
                 output << "dbgb $___addressCheckFailedMessage" << std::endl;
-                output << "mobj $___mcThis" << std::endl;
-                output << "mpsh $___mcThis" << std::endl;
+                output << "mobj $___this" << std::endl;
+                output << "mpsh $___this" << std::endl;
                 output << "ret" << std::endl;
                 output << "!jump ___addressCheckPassed " << std::endl;
                 for( std::vector< Value* >::reverse_iterator it = arguments.rbegin(); it != arguments.rend(); ++it )
                     (*it)->convertToISC( output, 0, true );
-                output << "mpsh $___mcThis" << std::endl;
+                output << "mpsh $___this" << std::endl;
                 output << "pshi $" << program->constantInt( arguments.size() ) << std::endl;
-                output << "jcal $___mcAddr" << std::endl;
+                output << "jcal $___addr" << std::endl;
                 output << "!namespace-end" << std::endl;
             }
             else
             {
+                output << "!namespace ___staticMethodCall" << program->nextUIDisc() << std::endl;
+                output << "!data address ___valueL 0" << std::endl;
                 for( std::vector< Value* >::reverse_iterator it = arguments.rbegin(); it != arguments.rend(); ++it )
                     (*it)->convertToISC( output );
                 output << "mobj $___valueL" << std::endl;
                 output << "mpsh $___valueL" << std::endl;
                 output << "pshi $" << program->constantInt( arguments.size() ) << std::endl;
                 output << "call @" << classId << "/" << id << std::endl;
+                output << "!namespace-end" << std::endl;
             }
             return true;
         }
@@ -2498,14 +2804,11 @@ namespace Kaiju
                 a->setProgram( p );
         }
 
-        unsigned int Program::Value::s_uidGenerator = 0;
-
         Program::Value::Value( Program* p, ASTNode* n )
         : Convertible( "value", p, n )
         , type( T_UNDEFINED )
         , data( 0 )
         , accessValue( 0 )
-        , m_uid( ++s_uidGenerator )
         {
             if( n->type != "value" )
             {
@@ -2541,6 +2844,18 @@ namespace Kaiju
                 }
                 data = c;
                 type = T_METHOD_CALL;
+            }
+            else if( n->hasType( "library_call" ) )
+            {
+                LibraryCall* c = new LibraryCall( p, n->findByType( "library_call" ) );
+                if( !c->isValid )
+                {
+                    appendError( c );
+                    Delete( c );
+                    return;
+                }
+                data = c;
+                type = T_LIBRARY_CALL;
             }
             else if( n->hasType( "operator.binary_operation" ) )
             {
@@ -2618,6 +2933,7 @@ namespace Kaiju
                 ASTNode* ns = n->findByType( "string" );
                 std::string v = ns->value.size() > 1 ? ns->value.substr( 1, ns->value.size() - 2 ) : ns->value;
                 id = p->constantString( v );
+                p->constantInt( v.length() );
                 type = T_STRING;
             }
             else if( n->hasType( "null_value" ) )
@@ -2652,9 +2968,21 @@ namespace Kaiju
                 id = nid->value;
                 type = T_IDENTIFIER;
             }
+            else if( n->hasType( "typeof_value" ) )
+            {
+                Typeof* t = new Typeof( p, n->findByType( "typeof_value" ) );
+                if( !t->isValid )
+                {
+                    appendError( t );
+                    Delete( t );
+                    return;
+                }
+                data = t;
+                type = T_TYPEOF;
+            }
             else
             {
-                appendError( n, "Value does not have either object creator, class method call, binary operation, unary operation, number, string, null value, field or identifier!" );
+                appendError( n, "Value does not have either object creator, class method call, binary operation, unary operation, number, string, null value, typeof value, library call, field or identifier!" );
                 return;
             }
             if( n->hasType( "access_value" ) )
@@ -2683,7 +3011,6 @@ namespace Kaiju
             classId.clear();
             Delete( data );
             Delete( accessValue );
-            m_uid = 0;
         }
 
         bool Program::Value::convertToPST( std::stringstream& output, int level )
@@ -2704,12 +3031,24 @@ namespace Kaiju
 
         bool Program::Value::convertToISC( std::stringstream& output, int level, bool isLeft )
         {
+            output << "!namespace ___value" << program->nextUIDisc() << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
             if( type == T_OBJECT_CREATE )
             {
                 if( data )
                     ((Method::Call*)data)->convertToISC( output, true );
             }
             else if( type == T_METHOD_CALL )
+            {
+                if( data )
+                    data->convertToISC( output );
+            }
+            else if( type == T_LIBRARY_CALL )
+            {
+                if( data )
+                    data->convertToISC( output );
+            }
+            else if( type == T_TYPEOF )
             {
                 if( data )
                     data->convertToISC( output );
@@ -2744,6 +3083,7 @@ namespace Kaiju
             }
             else if( type == T_STRING )
             {
+                output << "pshi $" << program->constantInt( program->constantStringValue( id ).length() ) << std::endl;
                 output << "ptr $___valueL $" << id << std::endl;
                 output << "psha $___valueL" << std::endl;
                 output << "call @___GET_STRING_FROM_ATOM" << std::endl;
@@ -2768,7 +3108,7 @@ namespace Kaiju
             {
                 if( level > 0 )
                 {
-                    output << "!namespace ___accessField" << m_uid << std::endl;
+                    output << "!namespace ___accessField" << program->nextUIDisc() << std::endl;
                     output << "!data address ___this 0" << std::endl;
                     output << "!data address ___field 0" << std::endl;
                     output << "!data int ___offset 0" << std::endl;
@@ -2807,6 +3147,7 @@ namespace Kaiju
             }
             if( accessValue )
                 accessValue->convertToISC( output, level + 1, isLeft );
+            output << "!namespace-end" << std::endl;
             return true;
         }
 
@@ -2817,6 +3158,151 @@ namespace Kaiju
                 data->setProgram( p );
             if( accessValue )
                 accessValue->setProgram( p );
+        }
+
+        Program::Value::Typeof::Typeof( Program* p, ASTNode* n )
+        : Convertible( "typeof", p, n )
+        , value( 0 )
+        {
+            if( n->type != "typeof_value" )
+            {
+                appendError( n, "AST node is not type of typeof_value!" );
+                return;
+            }
+            if( !n->hasType( "value" ) )
+            {
+                appendError( n, "Typeof does not have value!" );
+                return;
+            }
+            if( !n->hasType( "identifier" ) )
+            {
+                appendError( n, "Typeof does not have class identifier!" );
+                return;
+            }
+            classId = n->findByType( "identifier" )->value;
+            Value* v = new Value( p, n->findByType( "value" ) );
+            if( !v->isValid )
+            {
+                appendError( v );
+                Delete( v );
+                return;
+            }
+            value = v;
+            isValid = true;
+        }
+
+        Program::Value::Typeof::~Typeof()
+        {
+            classId.clear();
+            Delete( value );
+        }
+
+        bool Program::Value::Typeof::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(typeof)" << classId << std::endl;
+            return true;
+        }
+
+        bool Program::Value::Typeof::convertToISC( std::stringstream& output )
+        {
+            output << "!namespace ___typeof" << program->nextUIDisc() << std::endl;
+            output << "!data address ___ptr 0" << std::endl;
+            if( value )
+                value->convertToISC( output );
+            output << "mpop $___ptr" << std::endl;
+            output << "eadr 0 :*$___ptr->___Atom.___classMetaInfo $" << classId << "/type" << std::endl;
+            output << "pshi regi:0" << std::endl;
+            output << "call @___GET_BOOL_FROM_ATOM" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___ptr" << std::endl;
+            output << "mdel $___ptr" << std::endl;
+            output << "mpsh $___valueL" << std::endl;
+            output << "!namespace-end" << std::endl;
+            return true;
+        }
+
+        void Program::Value::Typeof::setProgram( Program* p )
+        {
+            program = p;
+            if( value )
+                value->setProgram( p );
+        }
+
+        Program::LibraryCall::LibraryCall( Program* p, ASTNode* n )
+        : Convertible( "library", p, n )
+        , call( 0 )
+        {
+            if( n->type != "library_call" )
+            {
+                appendError( n, "AST node is not type of library!" );
+                return;
+            }
+            if( !n->hasType( "class.method.call" ) )
+            {
+                appendError( n, "Library call does not have method call!" );
+                return;
+            }
+            ASTNode* nc = n->findByType( "class.method.call" );
+            Method::Call* c = new Method::Call( p, nc );
+            if( !c->isValid )
+            {
+                appendError( c );
+                Delete( c );
+                return;
+            }
+            if( c->classId.empty() )
+            {
+                appendError( n, "Library call must point to static method!" );
+                Delete( c );
+                return;
+            }
+            call = c;
+            program->constantHash( std::hash< std::string >()( c->classId ) );
+            program->constantHash( std::hash< std::string >()( c->id ) );
+            isValid = true;
+        }
+
+        Program::LibraryCall::~LibraryCall()
+        {
+            Delete( call );
+        }
+
+        bool Program::LibraryCall::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(library)" << std::endl;
+            if( call )
+                call->convertToPST( output, level + 1 );
+            return true;
+        }
+
+        bool Program::LibraryCall::convertToISC( std::stringstream& output )
+        {
+            output << "!namespace ___library" << program->nextUIDisc() << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            output << "ints LIBRARY" << std::endl;
+            for( std::vector< Value* >::reverse_iterator it = call->arguments.rbegin(); it != call->arguments.rend(); ++it )
+                (*it)->convertToISC( output );
+            output << "psha $" << program->constantHash( std::hash< std::string >()( call->id ) ) << std::endl;
+            output << "psha $" << program->constantHash( std::hash< std::string >()( call->classId ) ) << std::endl;
+            output << "intc 2" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "nadr 0 $___valueL" << std::endl;
+            output << "jifi 0 @___make @___go" << std::endl;
+            output << "!jump ___make" << std::endl;
+            output << "mobj $___valueL" << std::endl;
+            output << "!jump ___go" << std::endl;
+            output << "mpsh $___valueL" << std::endl;
+            output << "!namespace-end" << std::endl;
+            return true;
+        }
+
+        void Program::LibraryCall::setProgram( Program* p )
+        {
+            program = p;
+            if( call )
+                call->setProgram( p );
         }
 
         Program::Class::Class( Program* p, ASTNode* n )
@@ -2952,8 +3438,8 @@ namespace Kaiju
             for( auto& kv : atomFields )
             {
                 output << "[" << program->nextUIDpst() << "]" << lvl << "--(atomField)" << kv.first << std::endl;
-                output << "[" << program->nextUIDpst() << "]" << lvl << "--(atomField.type)" << kv.second.first << std::endl;
-                output << "[" << program->nextUIDpst() << "]" << lvl << "--(atomField.value)" << kv.second.second << std::endl;
+                output << "[" << program->nextUIDpst() << "]" << lvl << "---(atomField.type)" << kv.second.first << std::endl;
+                output << "[" << program->nextUIDpst() << "]" << lvl << "---(atomField.value)" << kv.second.second << std::endl;
             }
             output << "[" << program->nextUIDpst() << "]" << lvl << "-(methods)" << std::endl;
             for( auto& kv : methods )
@@ -2964,6 +3450,7 @@ namespace Kaiju
         bool Program::Class::convertToISC( std::stringstream& output )
         {
             output << "!namespace " << id << std::endl;
+            output << "!data address ___valueR 0" << std::endl;
             output << "!data bytes ___CLASS_NAME \"" << id << "\", 0" << std::endl;
             output << "!data int ___CLASS_NAMELEN " << (id.length() + 1) << std::endl;
             output << "!data address ___CLASS_UID " << m_uid << std::endl;
@@ -2985,8 +3472,6 @@ namespace Kaiju
             }
             std::vector< std::string > sfl;
             getFieldsList( sfl, true );
-            for( auto n : sfl )
-                output << "!data address " << n << " 0" << std::endl;
             output << "!start" << std::endl;
             output << "!namespace-end" << std::endl;
             output << "!jump ___CODE_%_jump_%" << std::endl;
@@ -3051,6 +3536,7 @@ namespace Kaiju
             output << "!jump ___Finalizer" << std::endl;
             output << "!namespace ___Finalizer" << std::endl;
             output << "!data address ___this 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
             output << "mpop $___this" << std::endl;
             output << "mpsh $___this" << std::endl;
             output << "pshi $___ZERO" << std::endl;
@@ -3094,6 +3580,10 @@ namespace Kaiju
             for( auto& kv : atomFields )
                 output << "!field " << kv.second.first << " " << kv.first << " " << kv.second.second << std::endl;
             output << "!struct-end" << std::endl;
+            std::vector< std::string > sfl;
+            getFieldsList( sfl, true );
+            for( auto n : sfl )
+                output << "!data address " << n << " 0" << std::endl;
             output << "!namespace-end" << std::endl;
             return true;
         }

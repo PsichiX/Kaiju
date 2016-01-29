@@ -8,7 +8,7 @@ namespace Kaiju
 {
     namespace Grammar
     {
-
+        struct library_call;
         struct statement_inner;
         struct statements_inner;
         struct value;
@@ -17,7 +17,6 @@ namespace Kaiju
             namespace Method
             {
                 struct call;
-                struct call_function;
             }
         }
         namespace Operator
@@ -60,9 +59,10 @@ namespace Kaiju
         struct null_value : pegtl::string< 'n', 'u', 'l', 'l'  > {};
         struct false_value : pegtl::string< 'f', 'a', 'l', 's', 'e'  > {};
         struct true_value : pegtl::string< 't', 'r', 'u', 'e' > {};
+        struct typeof_value : pegtl::seq< pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, pegtl::string< 't', 'y', 'p', 'e', 'o', 'f' >, whitespaces_any, identifier, whitespaces_any, pegtl::one< '}' > > {};
         struct access_value : pegtl::seq< whitespaces_any, pegtl::one< '.' >, whitespaces_any, value > {};
         struct field : pegtl::seq< identifier, whitespaces_any, pegtl::one< ':' >, whitespaces_any, identifier > {};
-        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call/*, Operator::binary_operation, Operator::unary_operation*/, false_value, true_value, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
+        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call/*, Operator::binary_operation, Operator::unary_operation*/, library_call, typeof_value, false_value, true_value, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
         namespace Variable
         {
             struct prefix : pegtl::string< 'v', 'a', 'r' > {};
@@ -96,7 +96,7 @@ namespace Kaiju
                 struct call_statement : pegtl::seq< call, whitespaces_any, semicolons > {};
             }
             struct prefix : pegtl::string< 'c', 'l', 'a', 's', 's' > {};
-            struct inheritance : pegtl::seq< pegtl::one< ':' >, whitespaces_any, identifier > {};
+            struct inheritance : pegtl::seq< pegtl::string< 'e', 'x', 't', 'e', 'n', 'd', 's' >, whitespaces_any, identifier > {};
             struct body : pegtl::seq< pegtl::one< '{' >, whitespaces_any, pegtl::star< pegtl::sor< Directive::statement, variable_statement, Method::definition_statement >, whitespaces_any >, pegtl::one< '}' > > {};
             struct definition_statement : pegtl::seq< prefix, whitespaces_any, identifier, pegtl::opt< whitespaces_any, inheritance >, whitespaces_any, body > {};
         }
@@ -161,11 +161,13 @@ namespace Kaiju
             struct unary_operator : pegtl::sor< increment, decrement, logical_not, bitwise_not > {};
             struct unary_operation : pegtl::seq< unary_operator, whitespaces_any, pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, pegtl::one< '}' > > {};
         }
+        struct library_call : pegtl::seq< pegtl::one< '{' >, whitespaces_any, pegtl::string< 'l', 'i', 'b', 'r', 'a', 'r', 'y' >, whitespaces, Class::Method::call, whitespaces_any, pegtl::one< '}' > > {};
+        struct library_statement : pegtl::seq< library_call, whitespaces_any, semicolons > {};
         struct expression_statement : pegtl::seq< value, whitespaces_any, semicolons > {};
-        struct statement_inner : pegtl::sor< Directive::statement, variable_statement, object_destroy_statement, ControlFlow::while_statement, ControlFlow::for_statement, ControlFlow::foreach_statement, ControlFlow::condition_statement, ControlFlow::return_statement, ControlFlow::continue_statement, ControlFlow::break_statement, Class::Method::call_statement, expression_statement > {};
+        struct statement_inner : pegtl::sor< Directive::statement, variable_statement, object_destroy_statement, ControlFlow::while_statement, ControlFlow::for_statement, ControlFlow::foreach_statement, ControlFlow::condition_statement, ControlFlow::return_statement, ControlFlow::continue_statement, ControlFlow::break_statement, Class::Method::call_statement, library_statement, expression_statement > {};
         struct statement_outter : pegtl::sor< Directive::statement, Class::definition_statement > {};
-        struct statements_inner : pegtl::plus< whitespaces_any, statement_inner, whitespaces_any > {};
-        struct statements_outter : pegtl::plus< whitespaces_any, statement_outter, whitespaces_any > {};
+        struct statements_inner : pegtl::star< whitespaces_any, statement_inner, whitespaces_any > {};
+        struct statements_outter : pegtl::star< whitespaces_any, statement_outter, whitespaces_any > {};
         struct grammar : pegtl::must< pegtl::opt< pegtl::shebang >, pegtl::opt< statements_outter >, pegtl::eof > {};
 
     }

@@ -1,0 +1,19 @@
+#library(SFML, "./sfml.so");
+
+#use("Object.kj");
+#use("Pointer");
+
+class SFML
+{
+	var _window;
+
+	Constructor(width, height)
+	{
+		this._window = {library SFML:createWindow(width, height)};
+	}
+
+	Destructor()
+	{
+		{library SFML:destroyWindow(this._window)};
+	}
+}

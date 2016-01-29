@@ -34,6 +34,7 @@ namespace Kaiju
             AST_GENERATOR_ACTION( Kaiju::Grammar::null_value );
             AST_GENERATOR_ACTION( Kaiju::Grammar::false_value );
             AST_GENERATOR_ACTION( Kaiju::Grammar::true_value );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::typeof_value );
             AST_GENERATOR_ACTION( Kaiju::Grammar::access_value );
             AST_GENERATOR_ACTION( Kaiju::Grammar::field );
             AST_GENERATOR_ACTION( Kaiju::Grammar::value );
@@ -72,6 +73,7 @@ namespace Kaiju
             AST_GENERATOR_ACTION( Kaiju::Grammar::Operator::binary_operation );
             AST_GENERATOR_ACTION( Kaiju::Grammar::Operator::unary_operator );
             AST_GENERATOR_ACTION( Kaiju::Grammar::Operator::unary_operation );
+            AST_GENERATOR_ACTION( Kaiju::Grammar::library_call );
             AST_GENERATOR_ACTION( Kaiju::Grammar::statement_inner );
             AST_GENERATOR_ACTION( Kaiju::Grammar::statement_outter );
 

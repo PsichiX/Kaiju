@@ -5,11 +5,15 @@ class String
 	#atomField(address, ___data, 1);
 	#atomField(int, ___size, 1);
 
+	static var newLine = "\n";
+
 	Constructor()
 	{
+		#inject("!data address ___ptr 0");
 		#inject("movi regi:0 $___ONE");
 		#inject("new :*$this->String/___Data.___data byte 0");
-		#inject("movb :*$this->String/___Data.___data $___NULLS 0");
+		#inject("mova $___ptr :*$this->String/___Data.___data");
+		#inject("movb :$___ptr $___NULLS 0");
 		#inject("movi :*$this->String/___Data.___size $___ZERO");
 	}
 
@@ -18,5 +22,87 @@ class String
 		#inject("del :*$this->String/___Data.___data");
 		#inject("mova :*$this->String/___Data.___data $___NULL");
 		#inject("movi :*$this->String/___Data.___size $___ZERO");
+	}
+
+	Length()
+	{
+		var result = 0;
+		#inject("movi :*$result->Int/___Data.___data :*$this->String/___Data.___size");
+		return result;
+	}
+
+	Assign(v)
+	{
+		#ensureType(v, String);
+		#inject("!data address ___ptr 0");
+		#inject("del :*$this->String/___Data.___data");
+		#inject("movi regi:0 :*$v->String/___Data.___size");
+		#inject("inci 0 0");
+		#inject("new :*$this->String/___Data.___data byte 0");
+		#inject("mova $___ptr :*$this->String/___Data.___data");
+		#inject("mova $___valueL :*$v->String/___Data.___data");
+		#inject("movb :$___ptr :$___valueL 0");
+		#inject("movi :*$this->String/___Data.___size :*$v->String/___Data.___size");
+	}
+
+	Clear()
+	{
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 $___ONE");
+		#inject("del :*$this->String/___Data.___data");
+		#inject("new :*$this->String/___Data.___data byte 0");
+		#inject("mova $___ptr :*$this->String/___Data.___data");
+		#inject("movb :$___ptr $___NULLS 0");
+		#inject("movi :*$this->String/___Data.___size $___ZERO");
+	}
+
+	Add(v)
+	{
+		#ensureType(v, String);	
+		var result = "";
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$this->String/___Data.___size");
+		#inject("movi regi:1 :*$v->String/___Data.___size");
+		#inject("addi 2 0 1");
+		#inject("inci 2 2");
+		#inject("del :*$result->String/___Data.___data");
+		#inject("new :*$result->String/___Data.___data byte 2");
+		#inject("deci 2 2");
+		#inject("mova $___ptr :*$result->String/___Data.___data");
+		#inject("mova $___valueL :*$this->String/___Data.___data");
+		#inject("movb :$___ptr :$___valueL 0");
+		#inject("mova $___valueL :*$v->String/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("movb :$___ptr :$___valueL 1");
+		#inject("sadr $___ptr byte 1");
+		#inject("movi regi:3 $___ONE");
+		#inject("movb :$___ptr $___NULLS 3");
+		#inject("movi :*$result->String/___Data.___size regi:2");
+		return result;
+	}
+
+	Append(v)
+	{
+		#ensureType(v, String);	
+		#inject("!data address ___ptr 0");
+		#inject("!data address ___data 0");
+		#inject("movi regi:0 :*$this->String/___Data.___size");
+		#inject("movi regi:1 :*$v->String/___Data.___size");
+		#inject("addi 2 0 1");
+		#inject("inci 2 2");
+		#inject("new $___ptr byte 2");
+		#inject("deci 2 2");
+		#inject("mova $___data $___ptr");
+		#inject("mova $___valueL :*$this->String/___Data.___data");
+		#inject("mova $___valueR :*$v->String/___Data.___data");
+		#inject("movb :$___ptr :$___valueL 0");
+		#inject("sadr $___ptr byte 0");
+		#inject("movb :$___ptr :$___valueR 1");
+		#inject("sadr $___ptr byte 1");
+		#inject("movi regi:3 $___ONE");
+		#inject("movb :$___ptr $___NULLS 3");
+		#inject("movi :*$this->String/___Data.___size regi:2");
+		#inject("del :*$this->String/___Data.___data");
+		#inject("mova :*$this->String/___Data.___data $___data");
 	}
 }

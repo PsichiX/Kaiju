@@ -65,7 +65,8 @@ namespace Kaiju
             std::string constantStringValue( const std::string& id );
             unsigned int constantHashValue( const std::string& id );
             unsigned int nextUIDpst() { return m_pstUidGenerator++; };
-            std::string subInput(size_t start, size_t length) { return m_input ? m_input->substr(start, length) : ""; };
+            unsigned int nextUIDisc() { return m_iscUidGenerator++; };
+            std::string subInput( size_t start, size_t length ) { return m_input ? m_input->substr(start, length) : ""; };
             bool loadContent( const std::string& path );
             bool absorbFrom( Program* p );
             Class* findClass( const std::string& id );
@@ -80,12 +81,14 @@ namespace Kaiju
             std::map< unsigned int, std::string > constHash;
             std::map< std::string, Class* > classes;
             std::string entryPoint;
+            std::map< std::string, std::string > libraries;
 
         private:
             ContentLoader* m_contentLoader;
             std::string* m_input;
             unsigned int m_uidGenerator;
             unsigned int m_pstUidGenerator;
+            unsigned int m_iscUidGenerator;
 
         public:
             class Directive : public Convertible
@@ -100,11 +103,6 @@ namespace Kaiju
 
                 std::string id;
                 std::vector< Value* > arguments;
-
-            private:
-                static unsigned int s_uidGenerator;
-
-                unsigned int m_uid;
             };
 
             class Variable : public Convertible
@@ -151,11 +149,7 @@ namespace Kaiju
                 std::vector< Convertible* > statements;
 
             private:
-                static unsigned int s_uidGenerator;
-
                 bool processStatement( ASTNode* n );
-
-                unsigned int m_uid;
             };
 
             class ObjectDestruction : public Convertible
@@ -183,11 +177,6 @@ namespace Kaiju
 
                 Value* condition;
                 Block* statements;
-
-            private:
-                static unsigned int s_uidGenerator;
-
-                unsigned int m_uid;
             };
 
             class ControlFlowForLoop : public Convertible
@@ -204,11 +193,6 @@ namespace Kaiju
                 Value* condition;
                 Value* iteration;
                 Block* statements;
-
-            private:
-                static unsigned int s_uidGenerator;
-
-                unsigned int m_uid;
             };
 
             class ControlFlowForeachLoop : public Convertible
@@ -224,11 +208,6 @@ namespace Kaiju
                 std::string iteratorId;
                 Value* collection;
                 Block* statements;
-
-            private:
-                static unsigned int s_uidGenerator;
-
-                unsigned int m_uid;
             };
 
             class ControlFlowCondition : public Convertible
@@ -242,11 +221,6 @@ namespace Kaiju
                 virtual void setProgram( Program* p );
 
                 std::vector< std::pair< Value*, Block* > > stages;
-
-            private:
-                static unsigned int s_uidGenerator;
-
-                unsigned int m_uid;
             };
 
             class ControlFlowReturn : public Convertible
@@ -269,7 +243,7 @@ namespace Kaiju
                 virtual ~ControlFlowContinue() {};
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p ) { program = p; };
             };
 
@@ -280,7 +254,7 @@ namespace Kaiju
                 virtual ~ControlFlowBreak() {};
 
                 bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
+                bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p ) { program = p; };
             };
 
@@ -349,11 +323,6 @@ namespace Kaiju
                     std::string id;
                     std::string classId;
                     std::vector< Value* > arguments;
-
-                private:
-                    static unsigned int s_uidGenerator;
-
-                    unsigned int m_uid;
                 };
             };
 
@@ -365,6 +334,7 @@ namespace Kaiju
                     T_UNDEFINED,
                     T_OBJECT_CREATE,
                     T_METHOD_CALL,
+                    T_LIBRARY_CALL,
                     T_BINARY_OPERATION,
                     T_UNARY_OPERATION,
                     T_NUMBER_INT,
@@ -373,6 +343,7 @@ namespace Kaiju
                     T_FALSE,
                     T_TRUE,
                     T_NULL,
+                    T_TYPEOF,
                     T_FIELD,
                     T_IDENTIFIER
                 };
@@ -391,10 +362,33 @@ namespace Kaiju
                 Convertible* data;
                 Value* accessValue;
 
-            private:
-                static unsigned int s_uidGenerator;
+            public:
+                class Typeof : public Convertible
+                {
+                public:
+                    Typeof( Program* p, ASTNode* n );
+                    virtual ~Typeof();
 
-                unsigned int m_uid;
+                    bool convertToPST( std::stringstream& output, int level = 0 );
+                    bool convertToISC( std::stringstream& output );
+                    virtual void setProgram( Program* p );
+
+                    std::string classId;
+                    Value* value;
+                };
+            };
+
+            class LibraryCall : public Convertible
+            {
+            public:
+                LibraryCall( Program* p, ASTNode* n  );
+                virtual ~LibraryCall();
+
+                bool convertToPST( std::stringstream& output, int level = 0 );
+                bool convertToISC( std::stringstream& output );
+                virtual void setProgram( Program* p );
+
+                Method::Call* call;
             };
 
             class Class : public Convertible

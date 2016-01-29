@@ -14,6 +14,12 @@ class Float
 		#inject("movf :*$this->Float/___Data.___data $___ZEROF");
 	}
 
+	Assign(v)
+	{
+		#ensureType(v, Float);
+		#inject("movf :*$this->Float/___Data.___data :*$v->Float/___Data.___data");
+	}
+
 	Add(v)
 	{
 		#ensureType(v, Float);
@@ -56,5 +62,63 @@ class Float
 		#inject("divf 2 0 1");
 		#inject("movf :*$result->Float/___Data.___data regf:2");
 		return result;
+	}
+
+	GreaterThan(v)
+	{
+		#ensureType(v, Float);
+		var result = false;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("movf regf:1 :*$v->Float/___Data.___data");
+		#inject("tgtf 2 0 1");
+		#inject("movf :*$result->Bool/___Data.___data regf:2");
+		return result;
+	}
+
+	LessThan(v)
+	{
+		#ensureType(v, Float);
+		var result = false;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("movf regf:1 :*$v->Float/___Data.___data");
+		#inject("tltf 2 0 1");
+		#inject("movf :*$result->Bool/___Data.___data regf:2");
+		return result;
+	}
+
+	EqualTo(v)
+	{
+		#ensureType(v, Float);
+		var result = false;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("movf regf:1 :*$v->Float/___Data.___data");
+		#inject("tetf 2 0 1");
+		#inject("movf :*$result->Bool/___Data.___data regf:2");
+		return result;
+	}
+
+	GreaterThanOrEqualTo(v)
+	{
+		return this.LessThan(v).Not();
+	}
+
+	LessThanOrEqualTo(v)
+	{
+		return this.GreaterThan(v).Not();
+	}
+
+	NotEqualTo(v)
+	{
+		return this.EqualTo(v).Not();
+	}
+
+	InRange(start, end)
+	{
+		return this.LessThan(end).And(this.GreaterThanOrEqualTo(start));
+	}
+
+	OutOfRange(start, end)
+	{
+		return this.LessThan(start).Or(this.GreaterThanOrEqualTo(end));
 	}
 }

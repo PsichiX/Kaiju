@@ -3,7 +3,8 @@
 #entry("Program : Main");
 
 #use("Person.kj");
-#use("Std.kj");
+#use("Atom.kj");
+//#use("SFML.kj");
 
 class Program
 {
@@ -13,61 +14,39 @@ class Program
 	static Main(...)
 	{
 		var c = Program:Add(Program:a, Program:b);
-		//Std:WriteLine(c);
-		#inject("dbgi :*$c->Int/___Data.___data");
-		#inject("dbgb $___NEW_LINE");
+		Program:Print("a + b = ", c, String:newLine);
 
 		var p = new Person("john", c.Add(20));
-		//Std:WriteLine(p.age);
+		Program:Print(p.name, " age is ", p.age, String:newLine);
 		var tmp = p.age;
-		#inject("dbgi :*$tmp->Int/___Data.___data");
-		#inject("dbgb $___NEW_LINE");
-		delete p;
 
-		#inject("dbgb $___NEW_LINE");
+		Program:Print(String:newLine);
 		
-		while(tmp.GreaterThan(10))
+		while(true)
 		{
+			if(tmp.LessThanOrEqualTo(10))
+				break;
 			tmp = tmp.Sub(1);
-			//Std:WriteLine(tmp);
-			#inject("dbgi :*$tmp->Int/___Data.___data");
-			#inject("dbgb $___NEW_LINE");
+			if(tmp.LessThan(15))
+				continue;
+			Program:Print("while ", tmp, " <= 10", String:newLine);
 		}
 
-		#inject("dbgb $___NEW_LINE");
+		Program:Print(String:newLine);
 		
 		for(var i = 0; i.LessThan(tmp); i.Add(1))
-		{
-			//Std:WriteLine(i);
-			#inject("dbgi :*$i->Int/___Data.___data");
-			#inject("dbgb $___NEW_LINE");
-		}
+			Program:Print("for i = ", i, String:newLine);
 
-		#inject("dbgb $___NEW_LINE");
+		Program:Print(String:newLine);
 		
 		if(false)
-		{
-			tmp = 0;
-			//Std:WriteLine(tmp);
-			#inject("dbgi :*$tmp->Int/___Data.___data");
-			#inject("dbgb $___NEW_LINE");
-		}
+			Program:Print("if false", String:newLine);
 		else if(tmp.EqualTo(10))
-		{
-			tmp = 1;
-			//Std:WriteLine(tmp);
-			#inject("dbgi :*$tmp->Int/___Data.___data");
-			#inject("dbgb $___NEW_LINE");
-		}
+			Program:Print("else if ", tmp, " = 10", String:newLine);
 		else
-		{
-			tmp = 2;
-			//Std:WriteLine(tmp);
-			#inject("dbgi :*$tmp->Int/___Data.___data");
-			#inject("dbgb $___NEW_LINE");
-		}
+			Program:Print("else", String:newLine);
 
-		#inject("dbgb $___NEW_LINE");
+		Program:Print(String:newLine);
 		
 		var a = new Array(4);
 		a.Set(0, 1);
@@ -75,10 +54,25 @@ class Program
 		a.Set(2, 3);
 		a.Set(3, 7);
 		foreach(v in a)
-		{
-			#inject("dbgi :*$v->Int/___Data.___data");
-			#inject("dbgb $___NEW_LINE");
-		}
+			Program:Print("foreach ", v, String:newLine);
+
+		Program:Print(String:newLine);
+		
+		var t = "hello world!";
+		Program:Print(t, String:newLine);
+
+		t.Append(" Dat ass!");
+		Program:Print(t, String:newLine);
+
+		Program:Print(String:newLine);
+
+		var to = {t typeof String};		
+		Program:Print("is String? ", to, String:newLine);
+
+		to = {t typeof Int};
+		Program:Print("is Int? ", to, String:newLine);
+
+		Program:Print(String:newLine);
 	}
 
 	static Add(a, b)
@@ -86,5 +80,35 @@ class Program
 		return a.Add(b);
 		// near future:
 		//return {a + b};
+	}
+
+	static Print(...)
+	{
+		foreach(arg in arguments)
+		{
+			if({arg typeof Int})
+				#inject("dbgi :*$arg->Int/___Data.___data");
+			else if({arg typeof Float})
+				#inject("dbgf :*$arg->Float/___Data.___data");
+			else if({arg typeof String})
+			{
+				#inject("!data address ptr 0");
+				#inject("mova $ptr :*$arg->String/___Data.___data");
+				#inject("dbgb :$ptr");
+			}
+			else if({arg typeof Bool})
+			{
+				#inject("!data bytes ___true 84, 82, 85, 69, 0");
+				#inject("!data bytes ___false 70, 65, 76, 83, 69, 0");
+				#inject("movi regi:0 :*$arg->Bool/___Data.___data");
+				#inject("jifi 0 @___printTrue @___printFalse");
+				#inject("!jump ___printTrue");
+				#inject("dbgb $___true");
+				#inject("goto @___printEnd");
+				#inject("!jump ___printFalse");
+				#inject("dbgb $___false");
+				#inject("!jump ___printEnd");
+			}
+		}
 	}
 }

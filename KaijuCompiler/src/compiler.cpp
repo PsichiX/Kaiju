@@ -31,6 +31,7 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::null_value, "null_value", false );
             REGISTER_TYPE( Kaiju::Grammar::false_value, "false_value", false );
             REGISTER_TYPE( Kaiju::Grammar::true_value, "true_value", false );
+            REGISTER_TYPE( Kaiju::Grammar::typeof_value, "typeof_value", true );
             REGISTER_TYPE( Kaiju::Grammar::access_value, "access_value", true );
             REGISTER_TYPE( Kaiju::Grammar::field, "field", true );
             REGISTER_TYPE( Kaiju::Grammar::value, "value", true );
@@ -69,6 +70,7 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::Operator::binary_operation, "operator.binary_operation", true );
             REGISTER_TYPE( Kaiju::Grammar::Operator::unary_operator, "operator.unary_operator", false );
             REGISTER_TYPE( Kaiju::Grammar::Operator::unary_operation, "operator.unary_operation", true );
+            REGISTER_TYPE( Kaiju::Grammar::library_call, "library_call", true );
             REGISTER_TYPE( Kaiju::Grammar::statement_inner, "statement_inner", true );
             REGISTER_TYPE( Kaiju::Grammar::statement_outter, "statement_outter", true );
             ASTGenerator::getInstance()->acquire( &output, input.data() );

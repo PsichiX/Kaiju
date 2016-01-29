@@ -1,0 +1,6 @@
+#use("Object.kj");
+
+class Pointer
+{
+	#atomicField(address, ___data, 1);
+}
