@@ -3,5 +3,7 @@
 	<Workspace title="Kaiju Workspace">
 		<Project filename="KaijuCompiler/KaijuCompiler.cbp" />
 		<Project filename="KaijuCompilerCommandLine/KaijuCompilerCommandLine.cbp" />
+		<Project filename="KaijuRuntime/KaijuRuntime.cbp" />
+		<Project filename="KaijuShell/KaijuShell.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

@@ -121,4 +121,51 @@ class Float
 	{
 		return this.LessThan(start).Or(this.GreaterThanOrEqualTo(end));
 	}
+
+	ToBool()
+	{
+		var result = false;
+		#inject("movf regf:0 :*$this->Int/___Data.___data");
+		#inject("movf regf:1 $___ZEROF");
+		#inject("tgtf 2 0 1");
+		#inject("fti regi:0 regf:2");
+		#inject("movi :*$result->Bool/___Data.___data regi:0");
+		return result;
+	}
+
+	ToInt()
+	{
+		var result = 0;
+		#inject("fti :*$result->Int/___Data.___data :*$this->Float/___Data.___data");
+		return result;
+	}
+
+	ToString()
+	{
+		var result;
+		#inject("!data address ___ptr 0");
+		#inject("ints STRING");
+		#inject("mpsh $this");
+		#inject("intc 2");
+		#inject("mpop $___ptr");
+		#inject("mref $result $___ptr");
+		#inject("mfin $___ptr");
+		#inject("mdel $___ptr");
+		return result;
+	}
+
+	static Parse(v)
+	{
+		#ensureType(v, String);
+		var result;
+		#inject("!data address ___ptr 0");
+		#inject("ints STRING");
+		#inject("mpsh $v");
+		#inject("intc 3");
+		#inject("mpop $___ptr");
+		#inject("mref $result $___ptr");
+		#inject("mfin $___ptr");
+		#inject("mdel $___ptr");
+		return result;
+	}
 }

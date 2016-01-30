@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="KaijuRuntime" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="[Linux] Debug">
+				<Option platforms="Unix;" />
+				<Option output="bin/Linux/Debug/KaijuRuntime-d" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="obj/Linux/Debug/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-DBUILD_LINUX" />
+				</Compiler>
+			</Target>
+			<Target title="[Linux] Release">
+				<Option platforms="Unix;" />
+				<Option output="bin/Linux/Release/KaijuRuntime" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="obj/Linux/Release/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-Wall" />
+					<Add option="-DBUILD_LINUX" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="[Win] Debug">
+				<Option platforms="Windows;" />
+				<Option output="bin/Win/Debug/KaijuRuntime-d" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="obj/Win/Debug/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-DBUILD_WIN" />
+				</Compiler>
+			</Target>
+			<Target title="[Win] Release">
+				<Option platforms="Windows;" />
+				<Option output="bin/Win/Release/KaijuRuntime" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="obj/Win/Release/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-Wall" />
+					<Add option="-DBUILD_WIN" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="[Linux]" targets="[Linux] Debug;[Linux] Release;" />
+			<Add alias="[Win]" targets="[Win] Debug;[Win] Release;" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-std=c++11" />
+			<Add option="-Wfatal-errors" />
+			<Add option="-Werror" />
+			<Add directory="../dependencies/XenonCore3/include" />
+			<Add directory="../KaijuCompiler/include" />
+		</Compiler>
+		<Unit filename="include/Runtime.h" />
+		<Unit filename="include/RuntimeTypes.h" />
+		<Unit filename="include_private/ContentLoader.h" />
+		<Unit filename="include_private/LibraryInterception.h" />
+		<Unit filename="include_private/RuntimeInterception.h" />
+		<Unit filename="include_private/StringInterception.h" />
+		<Unit filename="src/ContentLoader.cpp" />
+		<Unit filename="src/LibraryInterception.cpp" />
+		<Unit filename="src/Runtime.cpp" />
+		<Unit filename="src/RuntimeInterception.cpp" />
+		<Unit filename="src/StringInterception.cpp" />
+		<Extensions>
+			<envvars />
+			<code_completion />
+			<lib_finder disable_auto="1" />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

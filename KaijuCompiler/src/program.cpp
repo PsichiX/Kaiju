@@ -173,8 +173,10 @@ namespace Kaiju
             output << "!stack " << stackSize << std::endl;
             output << "!registers-i " << registersI << std::endl;
             output << "!registers-f " << registersF << std::endl;
-            output << "!external ___APPLICATION_ARGUMENTS_CSTR_PTR" << std::endl;
-            output << "!external ___APPLICATION_RESULT_INT" << std::endl;
+            output << "!external ___APP_ARGS_COUNT" << std::endl;
+            output << "!external ___APP_ARGS_CSTR_PTR" << std::endl;
+            output << "!external ___APP_ARGS_SIZE_PTR" << std::endl;
+            output << "!external ___APP_EXIT_CODE" << std::endl;
             output << "!data int ___ZERO 0" << std::endl;
             output << "!data float ___ZEROF 0.0" << std::endl;
             output << "!data address ___NULL 0" << std::endl;
@@ -498,6 +500,12 @@ namespace Kaiju
             output << "ret" << std::endl;
             output << "!jump ___CODE_%_jump_%" << std::endl;
             output << "#increment _jump_" << std::endl;
+            output << "ints RUNTIME" << std::endl;
+            for( auto& kv : classes )
+            {
+                output << "psha $" << kv.first << "/type" << std::endl;
+                output << "intc 0" << std::endl;
+            }
             output << "!namespace ___loadLibraries" << std::endl;
             output << "!data address ___ptr 0" << std::endl;
             output << "!data bytes ___messageFail0 \"Library: \", 0" << std::endl;
@@ -524,17 +532,43 @@ namespace Kaiju
             output << "!namespace-end" << std::endl;
             if( !entryPoint.empty() )
             {
-                // TODO: convert program arguments to array and push on stack (external data/stack).
+                output << "!data int ___argsCount 0" << std::endl;
+                output << "!data int ___argsCounter 0" << std::endl;
+                output << "!data address ___argsTable 0" << std::endl;
+                output << "!data address ___argsSizes 0" << std::endl;
                 output << "!data address ___temp 0" << std::endl;
+                output << "movi $___argsCount ^___APP_ARGS_COUNT" << std::endl;
+                output << "mova $___argsTable ^___APP_ARGS_CSTR_PTR" << std::endl;
+                output << "mova $___argsSizes ^___APP_ARGS_SIZE_PTR" << std::endl;
+                output << "movi $___argsCounter $___argsCount" << std::endl;
+                output << "!jump ___argsLoop" << std::endl;
+                output << "movi regi:0 $___argsCounter" << std::endl;
+                output << "jifi 0 @___argsMake @___argsPass" << std::endl;
+                output << "!jump ___argsMake" << std::endl;
+                output << "pshi :$___argsSizes" << std::endl;
+                output << "psha :$___argsTable" << std::endl;
+                output << "call @___GET_STRING_FROM_ATOM" << std::endl;
+                output << "movi regi:0 $___ONE" << std::endl;
+                output << "sadr $___argsTable address 0" << std::endl;
+                output << "sadr $___argsSizes int 0" << std::endl;
+                output << "movi regi:0 $___argsCounter" << std::endl;
+                output << "deci 0 0" << std::endl;
+                output << "movi $___argsCounter regi:0" << std::endl;
+                output << "goto @___argsLoop" << std::endl;
+                output << "!jump ___argsPass" << std::endl;
                 output << "mobj $___temp" << std::endl;
                 output << "mpsh $___temp" << std::endl;
-                output << "pshi $___ZERO" << std::endl;
+                output << "pshi $___argsCount" << std::endl;
                 size_t f = entryPoint.find( ':' );
                 output << "call @" << (f == std::string::npos ? entryPoint : string_trim(entryPoint.substr( 0, f )) + "/" + string_trim(entryPoint.substr( f + 1 ))) << std::endl;
                 output << "mpop $___temp" << std::endl;
+                output << "eadr 0 :*$___temp->___Atom.___classMetaInfo $Int/type" << std::endl;
+                output << "jifi 0 @___returnedCodePassed @___returnedCodeFailed" << std::endl;
+                output << "!jump ___returnedCodePassed" << std::endl;
+                output << "movi ^___APP_EXIT_CODE :*$___temp->Int/___Data.___data" << std::endl;
+                output << "!jump ___returnedCodeFailed" << std::endl;
                 output << "mfin $___temp" << std::endl;
                 output << "mdel $___temp" << std::endl;
-                // TODO: pop returned value from stack and set it as application exit code (external data/stack).
             }
             output << "!namespace ___unloadLibraries" << std::endl;
             output << "!data address ___ptr 0" << std::endl;

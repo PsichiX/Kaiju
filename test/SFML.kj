@@ -1,7 +1,7 @@
 #library(SFML, "./sfml.so");
 
 #use("Object.kj");
-#use("Pointer");
+#use("Pointer.kj");
 
 class SFML
 {

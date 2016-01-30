@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="KaijuShell" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="[Linux] Debug">
+				<Option output="bin/Linux/Debug/KaijuShell" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Linux/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="../test/test.kj 455 1337" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add library="KaijuRuntime-d" />
+					<Add library="XenonCore3-d" />
+					<Add library="KaijuCompiler-d" />
+					<Add library="dl" />
+					<Add library="pthread" />
+					<Add directory="../KaijuRuntime/bin/Linux/Debug" />
+					<Add directory="../dependencies/XenonCore3/lib/Linux" />
+					<Add directory="../KaijuCompiler/bin/Linux/Debug" />
+				</Linker>
+			</Target>
+			<Target title="[Linux] Release">
+				<Option output="bin/Linux/Release/KaijuShell" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Linux/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="KaijuRuntime" />
+					<Add library="XenonCore3" />
+					<Add library="KaijuCompiler" />
+					<Add library="dl" />
+					<Add library="pthread" />
+					<Add directory="../KaijuRuntime/bin/Linux/Release" />
+					<Add directory="../dependencies/XenonCore3/lib/Linux" />
+					<Add directory="../KaijuCompiler/bin/Linux/Release" />
+				</Linker>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="[Linux]" targets="[Linux] Debug;[Linux] Release;" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-std=c++11" />
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+			<Add directory="../KaijuRuntime/include" />
+		</Compiler>
+		<Unit filename="main.cpp" />
+		<Extensions>
+			<envvars />
+			<code_completion />
+			<lib_finder disable_auto="1" />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

@@ -2,5 +2,5 @@
 
 class Pointer
 {
-	#atomicField(address, ___data, 1);
+	#atomField(address, ___data, 1);
 }

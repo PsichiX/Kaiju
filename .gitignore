@@ -5,9 +5,8 @@ bin/
 *.cscope_file_list
 *.depend
 *.layout
-*.a
-SDK/
 test/*.ast
 test/*.pst
 test/*.isc
 test/*.itc
+update_dependencies.sh

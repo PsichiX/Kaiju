@@ -1,9 +1,0 @@
-#use("Atom.kj");
-
-class Std
-{
-	static WriteLine(...)
-	{
-		
-	}
-}

@@ -4,4 +4,4 @@
 #use("Float.kj");
 #use("String.kj");
 #use("Array.kj");
-//#use("Type.kj");
+#use("Pointer.kj");

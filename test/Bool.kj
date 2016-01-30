@@ -14,16 +14,6 @@ class Bool
 		#inject("movi :*$this->Bool/___Data.___data $___ZERO");
 	}
 
-	static True()
-	{
-		return true;
-	}
-
-	static False()
-	{
-		return false;
-	}
-
 	Not()
 	{
 		#inject("movi regi:0 :*$this->Bool/___Data.___data");
@@ -60,5 +50,15 @@ class Bool
 		return false;
 		#inject("!jump ___passed");
 		return true;
+	}
+
+	EqualTo(v)
+	{
+		return this.And(v);
+	}
+
+	NotEqualTo(v)
+	{
+		return this.EqualTo(v).Not();
 	}
 }

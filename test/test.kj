@@ -4,7 +4,6 @@
 
 #use("Person.kj");
 #use("Atom.kj");
-//#use("SFML.kj");
 
 class Program
 {
@@ -13,6 +12,18 @@ class Program
 
 	static Main(...)
 	{
+		Program:Print("Program arguments:", String:newLine);
+		foreach(a in arguments)
+			Program:Print(a, String:newLine);
+
+		if(arguments.Count().GreaterThan(2))
+		{
+			Program:a = Int:Parse(arguments.Get(1));
+			Program:b = Int:Parse(arguments.Get(2));
+		}
+
+		Program:Print(String:newLine);
+		
 		var c = Program:Add(Program:a, Program:b);
 		Program:Print("a + b = ", c, String:newLine);
 
@@ -29,7 +40,7 @@ class Program
 			tmp = tmp.Sub(1);
 			if(tmp.LessThan(15))
 				continue;
-			Program:Print("while ", tmp, " <= 10", String:newLine);
+			Program:Print("while ", tmp, " > 10", String:newLine);
 		}
 
 		Program:Print(String:newLine);
@@ -73,6 +84,8 @@ class Program
 		Program:Print("is Int? ", to, String:newLine);
 
 		Program:Print(String:newLine);
+
+		return 42;
 	}
 
 	static Add(a, b)
