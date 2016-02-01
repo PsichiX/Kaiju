@@ -29,13 +29,9 @@
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Compiler>
-					<Add option="-O2" />
 					<Add option="-Wall" />
-					<Add option="-D__USE_STD_EXTENSION__TO_STRING__" />
+					<Add option="-g" />
 				</Compiler>
-				<Linker>
-					<Add option="-s" />
-				</Linker>
 			</Target>
 			<Target title="[Linux] Debug">
 				<Option platforms="Unix;" />
@@ -48,6 +44,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-fPIC" />
 				</Compiler>
 			</Target>
 			<Target title="[Linux] Release">
@@ -59,8 +56,9 @@
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
 				<Compiler>
-					<Add option="-Wall" />
 					<Add option="-O2" />
+					<Add option="-Wall" />
+					<Add option="-fPIC" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />

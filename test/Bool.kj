@@ -14,6 +14,12 @@ class Bool
 		#inject("movi :*$this->Bool/___Data.___data $___ZERO");
 	}
 
+	Assign(v)
+	{
+		#ensureType(v, Bool);
+		#inject("movi :*$this->Bool/___Data.___data :*$v->Bool/___Data.___data");
+	}
+
 	Not()
 	{
 		#inject("movi regi:0 :*$this->Bool/___Data.___data");
@@ -54,11 +60,45 @@ class Bool
 
 	EqualTo(v)
 	{
-		return this.And(v);
+		#ensureType(v, Bool);
+		var result = false;
+		#inject("movi regi:0 :*$this->Bool/___Data.___data");
+		#inject("movi regi:1 :*$v->Bool/___Data.___data");
+		#inject("teti 2 0 1");
+		#inject("movi :*$result->Bool/___Data.___data regi:2");
+		return result;
 	}
 
 	NotEqualTo(v)
 	{
 		return this.EqualTo(v).Not();
+	}
+
+	ToInt()
+	{
+		var result = 0;
+		#inject("movi :*$result->Int/___Data.___data :*$this->Bool/___Data.___data");
+		return result;
+	}
+
+	ToFloat()
+	{
+		var result = 0.0;
+		#inject("itf :*$result->Float/___Data.___data :*$this->Bool/___Data.___data");
+		return result;
+	}
+
+	ToString()
+	{
+		var result;
+		#inject("!data address ___ptr 0");
+		#inject("ints STRING");
+		#inject("mpsh $this");
+		#inject("intc 4");
+		#inject("mpop $___ptr");
+		#inject("mref $result $___ptr");
+		#inject("mfin $___ptr");
+		#inject("mdel $___ptr");
+		return result;
 	}
 }

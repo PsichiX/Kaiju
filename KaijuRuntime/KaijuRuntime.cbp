@@ -17,6 +17,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-fPIC" />
 					<Add option="-DBUILD_LINUX" />
 				</Compiler>
 			</Target>
@@ -31,6 +32,7 @@
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-Wall" />
+					<Add option="-fPIC" />
 					<Add option="-DBUILD_LINUX" />
 				</Compiler>
 				<Linker>

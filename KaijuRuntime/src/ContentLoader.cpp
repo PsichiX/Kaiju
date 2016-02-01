@@ -3,6 +3,7 @@
 #include <sstream>
 #include <algorithm>
 #include <compiler.h>
+#include <cstdlib>
 
 namespace Kaiju
 {

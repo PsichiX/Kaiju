@@ -153,19 +153,4 @@ class Float
 		#inject("mdel $___ptr");
 		return result;
 	}
-
-	static Parse(v)
-	{
-		#ensureType(v, String);
-		var result;
-		#inject("!data address ___ptr 0");
-		#inject("ints STRING");
-		#inject("mpsh $v");
-		#inject("intc 3");
-		#inject("mpop $___ptr");
-		#inject("mref $result $___ptr");
-		#inject("mfin $___ptr");
-		#inject("mdel $___ptr");
-		return result;
-	}
 }

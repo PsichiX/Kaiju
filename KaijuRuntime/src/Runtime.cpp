@@ -118,7 +118,11 @@ namespace Kaiju
         m_types.clear();
         try
         {
+            const char* kaijuStdPath = std::getenv( "KAIJU_STD_PATH" );
+            const char* kaijuLibPath = std::getenv( "KAIJU_LIB_PATH" );
             ContentLoader* loader = new ContentLoader();
+            if( kaijuStdPath )
+                loader->paths.push_back( std::string( kaijuStdPath ) );
             std::string errors;
             Compiler::Program* kprog = loader->onContentLoad( path, errors );
             if( !kprog )
@@ -178,6 +182,8 @@ namespace Kaiju
                 RuntimeInterception* runtimeListener = xnew RuntimeInterception( this, cntx );
                 cntx->registerInterceptionListener( "RUNTIME", runtimeListener );
                 LibraryInterception* libraryListener = xnew LibraryInterception( this, cntx );
+                if( kaijuLibPath )
+                    libraryListener->paths.push_back( std::string( kaijuLibPath ) );
                 cntx->registerInterceptionListener( "LIBRARY", libraryListener );
                 StringInterception* stringListener = xnew StringInterception( this, cntx );
                 cntx->registerInterceptionListener( "STRING", stringListener );
@@ -293,11 +299,14 @@ namespace Kaiju
         return ((XeCore::Intuicio::ContextVM*)m_context)->getManagedObjectDataRaw( ptr );
     }
 
-    bool Runtime::newManagedObjectRaw( int64_t ptr, uint32_t size, uint32_t finaddr )
+    bool Runtime::newManagedObjectRaw( int64_t ptr, uint32_t size, const std::string& classId )
     {
         if( !m_context )
             return false;
-        return ((XeCore::Intuicio::ContextVM*)m_context)->newManagedObjectRaw( ptr, size, finaddr );
+        VM::___ClassMetaInfo* cmi = (VM::___ClassMetaInfo*)getTypeByName( classId );
+        if( !cmi )
+            return false;
+        return ((XeCore::Intuicio::ContextVM*)m_context)->newManagedObjectRaw( ptr, size );
     }
 
     uint32_t Runtime::getManagedObjectRefCount( int64_t ptr )

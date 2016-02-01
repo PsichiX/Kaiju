@@ -9,4 +9,5 @@ test/*.ast
 test/*.pst
 test/*.isc
 test/*.itc
+KaijuShell/build/output/
 update_dependencies.sh

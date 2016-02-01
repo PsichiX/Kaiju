@@ -624,12 +624,12 @@ namespace Kaiju
             return constStrings[ s ];
         }
 
-        const std::string& Program::constantHash( unsigned int v )
+        const std::string& Program::constantHash( int64_t v )
         {
             if( !constHash.count( v ) )
             {
                 std::stringstream ss;
-                ss << "__COSTANT_HASH_" << std::hash< unsigned int >()( v );
+                ss << "__COSTANT_HASH_" << std::hash< int64_t >()( v );
                 constHash[ v ] = ss.str();
             }
             return constHash[ v ];
@@ -659,7 +659,7 @@ namespace Kaiju
             return "";
         }
 
-        unsigned int Program::constantHashValue( const std::string& id )
+        int64_t Program::constantHashValue( const std::string& id )
         {
             for( auto& kv : constHash )
                 if( kv.second == id )
@@ -955,7 +955,7 @@ namespace Kaiju
                     appendError( n, "Library directive second argument is not type of string!" );
                     return;
                 }
-                std::string libid = arguments[ 1 ]->id;
+                std::string libid = arguments[ 0 ]->id;
                 std::string libpath = program->constantStringValue( arguments[ 1 ]->id );
                 program->constantHash( std::hash< std::string >()( libid ) );
                 program->constantString( libid );
@@ -1030,7 +1030,6 @@ namespace Kaiju
         , isStatic( false )
         , valueL( 0 )
         , valueR( 0 )
-        , m_uid( 0 )
         {
             if( n->type != "variable" )
             {
@@ -1057,8 +1056,7 @@ namespace Kaiju
                 ASTNode* nid = nd->findByType( "identifier" );
                 id = nid->value;
                 type = T_DECLARATION;
-                m_uid = std::hash< std::string >()( id );
-                p->constantHash( m_uid );
+                p->constantHash( std::hash< std::string >()( id ) );
                 isValid = true;
             }
             else if( n->hasType( "variable.assignment" ) )
@@ -1130,8 +1128,7 @@ namespace Kaiju
                 }
                 valueR = v;
                 type = T_DECLARATION_ASSIGNMENT;
-                m_uid = std::hash< std::string >()( id );
-                p->constantHash( m_uid );
+                p->constantHash( std::hash< std::string >()( id ) );
                 isValid = true;
             }
             else
@@ -1147,7 +1144,6 @@ namespace Kaiju
             id.clear();
             Delete( valueL );
             Delete( valueR );
-            m_uid = 0;
         }
 
         bool Program::Variable::convertToPST( std::stringstream& output, int level )
@@ -2517,7 +2513,6 @@ namespace Kaiju
         , isStatic( false )
         , argumentsParams( false )
         , statements( 0 )
-        , m_uid( 0 )
         {
             if( n->type != "class.method.definition_statement" )
             {
@@ -2567,8 +2562,7 @@ namespace Kaiju
                 return;
             }
             statements = b;
-            m_uid = std::hash< std::string >()( id );
-            p->constantHash( m_uid );
+            p->constantHash( std::hash< std::string >()( id ) );
             p->constantInt( arguments.size() );
             isValid = true;
         }
@@ -2580,11 +2574,9 @@ namespace Kaiju
         , arguments( a )
         , argumentsParams( false )
         , statements( 0 )
-        , m_uid( 0 )
         {
             statements = new Block( p );
-            m_uid = std::hash< std::string >()( id );
-            p->constantHash( m_uid );
+            p->constantHash( std::hash< std::string >()( id ) );
             isValid = true;
         }
 
@@ -2595,7 +2587,6 @@ namespace Kaiju
             arguments.clear();
             argumentsParams = false;
             Delete( statements );
-            m_uid = 0;
         }
 
         bool Program::Method::convertToPST( std::stringstream& output, int level )
@@ -3494,14 +3485,14 @@ namespace Kaiju
             {
                 output << "!data bytes ___FIELD_NAME_" << kv.first << " \"" << kv.first << "\", 0" << std::endl;
                 output << "!data int ___FIELD_NAMELEN_" << kv.first << " " << (kv.first.length() + 1) << std::endl;
-                output << "!data address ___FIELD_UID_" << kv.first << " " << kv.second->getUID() << std::endl;
+                output << "!data address ___FIELD_UID_" << kv.first << " " << (int64_t)std::hash< std::string >()( kv.first ) << std::endl;
                 output << "!data int ___FIELD_STATIC_" << kv.first << " " << (int)kv.second->isStatic << std::endl;
             }
             for( auto& kv : methods )
             {
                 output << "!data bytes ___METHOD_NAME_" << kv.first << " \"" << kv.first << "\", 0" << std::endl;
                 output << "!data int ___METHOD_NAMELEN_" << kv.first << " " << (kv.first.length() + 1) << std::endl;
-                output << "!data address ___METHOD_UID_" << kv.first << " " << kv.second->getUID() << std::endl;
+                output << "!data address ___METHOD_UID_" << kv.first << " " << (int64_t)std::hash< std::string >()( kv.first ) << std::endl;
                 output << "!data int ___METHOD_STATIC_" << kv.first << " " << (int)kv.second->isStatic << std::endl;
             }
             std::vector< std::string > sfl;

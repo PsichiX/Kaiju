@@ -3,4 +3,56 @@
 class Pointer
 {
 	#atomField(address, ___data, 1);
+
+	Constructor()
+	{
+		#inject("mova :*$this->Pointer/___Data.___data $___NULL");
+	}
+
+	Destructor()
+	{
+		#inject("mova :*$this->Pointer/___Data.___data $___NULL");
+	}
+
+	Assign(v)
+	{
+		#ensureType(v, Pointer);
+		#inject("mova :*$this->Pointer/___Data.___data :*$v->Pointer/___Data.___data");
+	}
+
+	IsNull()
+	{
+		var result = false;
+		#inject("nadr 0 :*$this->Pointer/___Data.___data");
+		#inject("movi :*$result->Bool/___Data.___data regi:0");
+		return result;
+	}
+
+	EqualTo(v)
+	{
+		#ensureType(v, Pointer);
+		var result = false;
+		#inject("eadr 0 :*$this->Pointer/___Data.___data :*$v->Pointer/___Data.___data");
+		#inject("movi :*$result->Bool/___Data.___data regi:0");
+		return result;
+	}
+
+	NotEqualTo(v)
+	{
+		return this.EqualTo(v).Not();
+	}
+
+	ToString()
+	{
+		var result;
+		#inject("!data address ___ptr 0");
+		#inject("ints STRING");
+		#inject("mpsh $this");
+		#inject("intc 6");
+		#inject("mpop $___ptr");
+		#inject("mref $result $___ptr");
+		#inject("mfin $___ptr");
+		#inject("mdel $___ptr");
+		return result;
+	}
 }

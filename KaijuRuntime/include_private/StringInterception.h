@@ -14,7 +14,11 @@ namespace Kaiju
             C_INT_TO_STRING,
             C_STRING_TO_INT,
             C_FLOAT_TO_STRING,
-            C_STRING_TO_FLOAT
+            C_STRING_TO_FLOAT,
+            C_BOOL_TO_STRING,
+            C_STRING_TO_BOOL,
+            C_POINTER_TO_STRING,
+            C_STRING_TO_POINTER
         };
 
         StringInterception( Runtime* owner, XeCore::Intuicio::ContextVM* context ) : m_owner( owner ), m_context( context ) {};

@@ -1,4 +1,4 @@
-#!/usr/bin/env kaiju
+#!/usr/lib/kaiju/bin/kaiju
 
 #entry("Program : Main");
 
@@ -18,8 +18,8 @@ class Program
 
 		if(arguments.Count().GreaterThan(2))
 		{
-			Program:a = Int:Parse(arguments.Get(1));
-			Program:b = Int:Parse(arguments.Get(2));
+			Program:a = arguments.Get(1).ToInt();
+			Program:b = arguments.Get(2).ToInt();
 		}
 
 		Program:Print(String:newLine);

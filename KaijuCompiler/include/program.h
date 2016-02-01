@@ -59,11 +59,11 @@ namespace Kaiju
             const std::string& constantInt( int v );
             const std::string& constantFloat( float v );
             const std::string& constantString( const std::string& v );
-            const std::string& constantHash( unsigned int v );
+            const std::string& constantHash( int64_t v );
             int constantIntValue( const std::string& id );
             float constantFloatValue( const std::string& id );
             std::string constantStringValue( const std::string& id );
-            unsigned int constantHashValue( const std::string& id );
+            int64_t constantHashValue( const std::string& id );
             unsigned int nextUIDpst() { return m_pstUidGenerator++; };
             unsigned int nextUIDisc() { return m_iscUidGenerator++; };
             std::string subInput( size_t start, size_t length ) { return m_input ? m_input->substr(start, length) : ""; };
@@ -78,7 +78,7 @@ namespace Kaiju
             std::map< int, std::string > constInts;
             std::map< float, std::string > constFloats;
             std::map< std::string, std::string > constStrings;
-            std::map< unsigned int, std::string > constHash;
+            std::map< int64_t, std::string > constHash;
             std::map< std::string, Class* > classes;
             std::string entryPoint;
             std::map< std::string, std::string > libraries;
@@ -122,16 +122,12 @@ namespace Kaiju
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p );
-                unsigned int getUID() { return m_uid; };
 
                 Type type;
                 bool isStatic;
                 std::string id;
                 Value* valueL;
                 Value* valueR;
-
-            private:
-                unsigned int m_uid;
             };
 
             class Block : public Convertible
@@ -297,16 +293,12 @@ namespace Kaiju
                 bool convertToPST( std::stringstream& output, int level = 0 );
                 bool convertToISC( std::stringstream& output );
                 virtual void setProgram( Program* p );
-                unsigned int getUID() { return m_uid; };
 
                 bool isStatic;
                 std::string id;
                 std::vector< std::string > arguments;
                 bool argumentsParams;
                 Block* statements;
-
-            private:
-                unsigned int m_uid;
 
             public:
                 class Call : public Convertible

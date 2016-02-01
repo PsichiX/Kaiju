@@ -105,4 +105,60 @@ class String
 		#inject("del :*$this->String/___Data.___data");
 		#inject("mova :*$this->String/___Data.___data $___data");
 	}
+
+	ToInt()
+	{
+		var result;
+		#inject("!data address ___ptr 0");
+		#inject("ints STRING");
+		#inject("mpsh $this");
+		#inject("intc 1");
+		#inject("mpop $___ptr");
+		#inject("mref $result $___ptr");
+		#inject("mfin $___ptr");
+		#inject("mdel $___ptr");
+		return result;
+	}
+
+	ToFloat()
+	{
+		var result;
+		#inject("!data address ___ptr 0");
+		#inject("ints STRING");
+		#inject("mpsh $this");
+		#inject("intc 3");
+		#inject("mpop $___ptr");
+		#inject("mref $result $___ptr");
+		#inject("mfin $___ptr");
+		#inject("mdel $___ptr");
+		return result;
+	}
+
+	ToBool()
+	{
+		var result;
+		#inject("!data address ___ptr 0");
+		#inject("ints STRING");
+		#inject("mpsh $this");
+		#inject("intc 5");
+		#inject("mpop $___ptr");
+		#inject("mref $result $___ptr");
+		#inject("mfin $___ptr");
+		#inject("mdel $___ptr");
+		return result;
+	}
+
+	ToPointer()
+	{
+		var result;
+		#inject("!data address ___ptr 0");
+		#inject("ints STRING");
+		#inject("mpsh $this");
+		#inject("intc 7");
+		#inject("mpop $___ptr");
+		#inject("mref $result $___ptr");
+		#inject("mfin $___ptr");
+		#inject("mdel $___ptr");
+		return result;
+	}
 }

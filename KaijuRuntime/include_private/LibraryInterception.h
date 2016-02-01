@@ -15,7 +15,7 @@ namespace Kaiju
         void* handle;
         int32_t (*onLoad)();
         int32_t (*onUnload)();
-        int32_t (*onCall)( Runtime*, int64_t );
+        int32_t (*onCall)( Runtime*, int64_t, int64_t );
     };
 
     class LibraryInterception : public XeCore::Intuicio::ContextVM::OnInterceptListener
@@ -32,6 +32,8 @@ namespace Kaiju
         virtual ~LibraryInterception();
 
         virtual bool onIntercept( XeCore::Intuicio::ParallelThreadVM* caller, uint32_t code );
+
+        std::vector< std::string > paths;
 
     private:
         Runtime* m_owner;

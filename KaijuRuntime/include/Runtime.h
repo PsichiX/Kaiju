@@ -28,9 +28,9 @@ namespace Kaiju
         void* getManagedObjectDataRaw( int64_t ptr );
         template< typename T >
         inline T* getManagedObjectData( int64_t ptr ) { return (T*)getManagedObjectDataRaw( ptr ); };
-        bool newManagedObjectRaw( int64_t ptr, uint32_t size, uint32_t finaddr = 0 );
+        bool newManagedObjectRaw( int64_t ptr, uint32_t size, const std::string& classId );
         template< typename T >
-        inline bool newManagedObject( int64_t ptr, uint32_t count, uint32_t finaddr = 0 ) { return newManagedObjectRaw( ptr, count * sizeof( T ), finaddr ); };
+        inline bool newManagedObject( int64_t ptr, uint32_t count, const std::string& classId ) { return newManagedObjectRaw( ptr, count * sizeof( T ), classId ); };
         uint32_t getManagedObjectRefCount( int64_t ptr );
         uint32_t getManagedObjectFinalizerAddress( int64_t ptr );
         void* getTypeByNameRaw( const std::string& name );

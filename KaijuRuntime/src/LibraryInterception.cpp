@@ -3,14 +3,17 @@
 
 namespace Kaiju
 {
-    void* loadLibrary( const char* path )
+    void* loadLibrary( const std::string& path )
     {
-        return dlopen( path, RTLD_LAZY );
+        void* h = dlopen( path.c_str(), RTLD_LAZY );
+        if( !h )
+            h = dlopen( (path + ".so").c_str(), RTLD_LAZY );
+        return h;
     }
 
-    void* getFunction( void* handle, const char* name )
+    void* getFunction( void* handle, const std::string& name )
     {
-        return dlsym( handle, name );
+        return dlsym( handle, name.c_str() );
     }
 
     int closeLibrary( void* handle )
@@ -36,17 +39,26 @@ namespace Kaiju
             Library lib;
             int64_t id = 0;
             int64_t ptrPath = 0;
-            char* path = 0;
+            std::string path;
             if( !m_context->stackPop( caller, &id, sizeof( id ) ) )
                 return false;
             if( !m_context->stackPop( caller, &ptrPath, sizeof( ptrPath ) ) )
                 return false;
             if( m_libraries.count( id ) )
                 return false;
-            path = (char*)ptrPath;
-            if( !id || !path )
+            if( !id || !ptrPath )
                 return false;
+            path = (char*)ptrPath;
             lib.handle = loadLibrary( path );
+            if( !lib.handle )
+            {
+                for( auto p : paths )
+                {
+                    lib.handle = loadLibrary( (p + "/" + path).c_str() );
+                    if( lib.handle )
+                        break;
+                }
+            }
             if( !lib.handle )
             {
                 int32_t v = 0;
@@ -55,7 +67,7 @@ namespace Kaiju
             }
             lib.onLoad = (int32_t (*)())getFunction( lib.handle, "onLoad" );
             lib.onUnload = (int32_t (*)())getFunction( lib.handle, "onUnload" );
-            lib.onCall = (int32_t (*)( Runtime*, int64_t ))getFunction( lib.handle, "onCall" );
+            lib.onCall = (int32_t (*)( Runtime*, int64_t, int64_t ))getFunction( lib.handle, "onCall" );
             if( !lib.onLoad || !lib.onUnload || !lib.onCall )
             {
                 closeLibrary( lib.handle );
@@ -99,7 +111,7 @@ namespace Kaiju
                 return false;
             if( !m_libraries.count( id ) )
                 return false;
-            int32_t status = m_libraries[ id ].onCall( m_owner, (int64_t)caller );
+            int32_t status = m_libraries[ id ].onCall( m_owner, (int64_t)caller, func );
             return status;
         }
         return false;
