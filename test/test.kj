@@ -83,6 +83,15 @@ class Program
 		to = {t typeof Int};
 		Program:Print("is Int? ", to, String:newLine);
 
+		to = {t hasmethod Append};
+		Program:Print("has Append method? ", to, String:newLine);
+
+		to = {t hasmethod Div};
+		Program:Print("has Div method? ", to, String:newLine);
+
+		to = {t hasfield size};
+		Program:Print("has size field? ", to, String:newLine);
+
 		Program:Print(String:newLine);
 
 		return 42;

@@ -336,6 +336,8 @@ namespace Kaiju
                     T_TRUE,
                     T_NULL,
                     T_TYPEOF,
+                    T_HASMETHOD,
+                    T_HASFIELD,
                     T_FIELD,
                     T_IDENTIFIER
                 };
@@ -366,6 +368,34 @@ namespace Kaiju
                     virtual void setProgram( Program* p );
 
                     std::string classId;
+                    Value* value;
+                };
+
+                class Hasmethod : public Convertible
+                {
+                public:
+                    Hasmethod( Program* p, ASTNode* n );
+                    virtual ~Hasmethod();
+
+                    bool convertToPST( std::stringstream& output, int level = 0 );
+                    bool convertToISC( std::stringstream& output );
+                    virtual void setProgram( Program* p );
+
+                    std::string methodId;
+                    Value* value;
+                };
+
+                class Hasfield : public Convertible
+                {
+                public:
+                    Hasfield( Program* p, ASTNode* n );
+                    virtual ~Hasfield();
+
+                    bool convertToPST( std::stringstream& output, int level = 0 );
+                    bool convertToISC( std::stringstream& output );
+                    virtual void setProgram( Program* p );
+
+                    std::string fieldId;
                     Value* value;
                 };
             };

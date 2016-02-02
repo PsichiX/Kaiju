@@ -32,6 +32,8 @@ namespace Kaiju
             REGISTER_TYPE( Kaiju::Grammar::false_value, "false_value", false );
             REGISTER_TYPE( Kaiju::Grammar::true_value, "true_value", false );
             REGISTER_TYPE( Kaiju::Grammar::typeof_value, "typeof_value", true );
+            REGISTER_TYPE( Kaiju::Grammar::hasmethod_value, "hasmethod_value", true );
+            REGISTER_TYPE( Kaiju::Grammar::hasfield_value, "hasfield_value", true );
             REGISTER_TYPE( Kaiju::Grammar::access_value, "access_value", true );
             REGISTER_TYPE( Kaiju::Grammar::field, "field", true );
             REGISTER_TYPE( Kaiju::Grammar::value, "value", true );

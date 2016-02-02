@@ -60,9 +60,11 @@ namespace Kaiju
         struct false_value : pegtl::string< 'f', 'a', 'l', 's', 'e'  > {};
         struct true_value : pegtl::string< 't', 'r', 'u', 'e' > {};
         struct typeof_value : pegtl::seq< pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, pegtl::string< 't', 'y', 'p', 'e', 'o', 'f' >, whitespaces_any, identifier, whitespaces_any, pegtl::one< '}' > > {};
+        struct hasmethod_value : pegtl::seq< pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, pegtl::string< 'h', 'a', 's', 'm', 'e', 't', 'h', 'o', 'd' >, whitespaces_any, identifier, whitespaces_any, pegtl::one< '}' > > {};
+        struct hasfield_value : pegtl::seq< pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, pegtl::string< 'h', 'a', 's', 'f', 'i', 'e', 'l', 'd' >, whitespaces_any, identifier, whitespaces_any, pegtl::one< '}' > > {};
         struct access_value : pegtl::seq< whitespaces_any, pegtl::one< '.' >, whitespaces_any, value > {};
         struct field : pegtl::seq< identifier, whitespaces_any, pegtl::one< ':' >, whitespaces_any, identifier > {};
-        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call/*, Operator::binary_operation, Operator::unary_operation*/, library_call, typeof_value, false_value, true_value, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
+        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call/*, Operator::binary_operation, Operator::unary_operation*/, library_call, typeof_value, hasmethod_value, hasfield_value, false_value, true_value, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
         namespace Variable
         {
             struct prefix : pegtl::string< 'v', 'a', 'r' > {};

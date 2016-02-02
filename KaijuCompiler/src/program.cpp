@@ -3008,9 +3008,33 @@ namespace Kaiju
                 data = t;
                 type = T_TYPEOF;
             }
+            else if( n->hasType( "hasmethod_value" ) )
+            {
+                Hasmethod* m = new Hasmethod( p, n->findByType( "hasmethod_value" ) );
+                if( !m->isValid )
+                {
+                    appendError( m );
+                    Delete( m );
+                    return;
+                }
+                data = m;
+                type = T_HASMETHOD;
+            }
+            else if( n->hasType( "hasfield_value" ) )
+            {
+                Hasfield* f = new Hasfield( p, n->findByType( "hasfield_value" ) );
+                if( !f->isValid )
+                {
+                    appendError( f );
+                    Delete( f );
+                    return;
+                }
+                data = f;
+                type = T_HASFIELD;
+            }
             else
             {
-                appendError( n, "Value does not have either object creator, class method call, binary operation, unary operation, number, string, null value, typeof value, library call, field or identifier!" );
+                appendError( n, "Value does not have either object creator, class method call, binary operation, unary operation, number, string, null value, typeof value, hasmethod value, hasfield value, library call, field or identifier!" );
                 return;
             }
             if( n->hasType( "access_value" ) )
@@ -3077,6 +3101,16 @@ namespace Kaiju
                     data->convertToISC( output );
             }
             else if( type == T_TYPEOF )
+            {
+                if( data )
+                    data->convertToISC( output );
+            }
+            else if( type == T_HASMETHOD )
+            {
+                if( data )
+                    data->convertToISC( output );
+            }
+            else if( type == T_HASFIELD )
             {
                 if( data )
                     data->convertToISC( output );
@@ -3229,6 +3263,8 @@ namespace Kaiju
         {
             std::string lvl( level, '-' );
             output << "[" << program->nextUIDpst() << "]" << lvl << "(typeof)" << classId << std::endl;
+            if( value )
+                value->convertToISC( output, level + 1 );
             return true;
         }
 
@@ -3236,6 +3272,7 @@ namespace Kaiju
         {
             output << "!namespace ___typeof" << program->nextUIDisc() << std::endl;
             output << "!data address ___ptr 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
             if( value )
                 value->convertToISC( output );
             output << "mpop $___ptr" << std::endl;
@@ -3251,6 +3288,162 @@ namespace Kaiju
         }
 
         void Program::Value::Typeof::setProgram( Program* p )
+        {
+            program = p;
+            if( value )
+                value->setProgram( p );
+        }
+
+        Program::Value::Hasmethod::Hasmethod( Program* p, ASTNode* n )
+        : Convertible( "hasmethod", p, n )
+        , value( 0 )
+        {
+            if( n->type != "hasmethod_value" )
+            {
+                appendError( n, "AST node is not type of hasmethod_value!" );
+                return;
+            }
+            if( !n->hasType( "value" ) )
+            {
+                appendError( n, "Hasmethod does not have value!" );
+                return;
+            }
+            if( !n->hasType( "identifier" ) )
+            {
+                appendError( n, "Hasmethod does not have method identifier!" );
+                return;
+            }
+            methodId = n->findByType( "identifier" )->value;
+            Value* v = new Value( p, n->findByType( "value" ) );
+            if( !v->isValid )
+            {
+                appendError( v );
+                Delete( v );
+                return;
+            }
+            value = v;
+            program->constantHash( std::hash< std::string >()( methodId ) );
+            isValid = true;
+        }
+
+        Program::Value::Hasmethod::~Hasmethod()
+        {
+            methodId.clear();
+            Delete( value );
+        }
+
+        bool Program::Value::Hasmethod::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(hasmethod)" << methodId << std::endl;
+            if( value )
+                value->convertToISC( output, level + 1 );
+            return true;
+        }
+
+        bool Program::Value::Hasmethod::convertToISC( std::stringstream& output )
+        {
+            output << "!namespace ___hasmethod" << program->nextUIDisc() << std::endl;
+            output << "!data address ___ptr 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            if( value )
+                value->convertToISC( output );
+            output << "mpop $___ptr" << std::endl;
+            output << "psha $" << program->constantHash( std::hash< std::string >()( methodId ) ) << std::endl;
+            output << "mpsh $___ptr" << std::endl;
+            output << "call @___FIND_HASHED_METHOD_OF" << std::endl;
+            output << "popi regi:0" << std::endl;
+            output << "movi regi:1 $___ZERO" << std::endl;
+            output << "tgti 2 0 1" << std::endl;
+            output << "pshi regi:2" << std::endl;
+            output << "call @___GET_BOOL_FROM_ATOM" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___ptr" << std::endl;
+            output << "mdel $___ptr" << std::endl;
+            output << "mpsh $___valueL" << std::endl;
+            output << "!namespace-end" << std::endl;
+            return true;
+        }
+
+        void Program::Value::Hasmethod::setProgram( Program* p )
+        {
+            program = p;
+            if( value )
+                value->setProgram( p );
+        }
+
+        Program::Value::Hasfield::Hasfield( Program* p, ASTNode* n )
+        : Convertible( "hasfield", p, n )
+        , value( 0 )
+        {
+            if( n->type != "hasfield_value" )
+            {
+                appendError( n, "AST node is not type of hasfield_value!" );
+                return;
+            }
+            if( !n->hasType( "value" ) )
+            {
+                appendError( n, "Hasfield does not have value!" );
+                return;
+            }
+            if( !n->hasType( "identifier" ) )
+            {
+                appendError( n, "Hasfield does not have field identifier!" );
+                return;
+            }
+            fieldId = n->findByType( "identifier" )->value;
+            Value* v = new Value( p, n->findByType( "value" ) );
+            if( !v->isValid )
+            {
+                appendError( v );
+                Delete( v );
+                return;
+            }
+            value = v;
+            program->constantHash( std::hash< std::string >()( fieldId ) );
+            isValid = true;
+        }
+
+        Program::Value::Hasfield::~Hasfield()
+        {
+            fieldId.clear();
+            Delete( value );
+        }
+
+        bool Program::Value::Hasfield::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(hasfield)" << fieldId << std::endl;
+            if( value )
+                value->convertToISC( output, level + 1 );
+            return true;
+        }
+
+        bool Program::Value::Hasfield::convertToISC( std::stringstream& output )
+        {
+            output << "!namespace ___hasfield" << program->nextUIDisc() << std::endl;
+            output << "!data address ___ptr 0" << std::endl;
+            output << "!data address ___valueL 0" << std::endl;
+            if( value )
+                value->convertToISC( output );
+            output << "mpop $___ptr" << std::endl;
+            output << "psha $" << program->constantHash( std::hash< std::string >()( fieldId ) ) << std::endl;
+            output << "mpsh $___ptr" << std::endl;
+            output << "call @___FIND_HASHED_FIELD_OF" << std::endl;
+            output << "popi regi:0" << std::endl;
+            output << "movi regi:1 $___ZERO" << std::endl;
+            output << "tgti 2 0 1" << std::endl;
+            output << "pshi regi:2" << std::endl;
+            output << "call @___GET_BOOL_FROM_ATOM" << std::endl;
+            output << "mpop $___valueL" << std::endl;
+            output << "mfin $___ptr" << std::endl;
+            output << "mdel $___ptr" << std::endl;
+            output << "mpsh $___valueL" << std::endl;
+            output << "!namespace-end" << std::endl;
+            return true;
+        }
+
+        void Program::Value::Hasfield::setProgram( Program* p )
         {
             program = p;
             if( value )
