@@ -5,6 +5,11 @@ if [[ $EUID -ne 0 ]]; then
 	exit 1
 fi
 
+echo "Uninstall previous version..."
+rm /usr/bin/kaiju
+rm -r /usr/lib/kaiju
+sed -i '/\#KaijuShell\#/d' ~/.bashrc
+
 echo "Install Kaiju Shell binaries..."
 mkdir /usr/lib/kaiju/
 cp -r ./bin /usr/lib/kaiju/bin
@@ -15,7 +20,6 @@ chmod +x /usr/lib/kaiju/bin/setupenv.sh
 ln -s /usr/lib/kaiju/bin/kaiju /usr/bin/kaiju
 
 echo "Setup Kaiju Shell environment..."
-sed -i '/\#KaijuShell\#/d' ~/.bashrc
 echo "[ -r /usr/lib/kaiju/bin/setupenv.sh ] && . /usr/lib/kaiju/bin/setupenv.sh #KaijuShell#" >> ~/.bashrc
 
 echo "Done! Now you can remove installation files."
