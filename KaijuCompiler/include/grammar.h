@@ -64,7 +64,7 @@ namespace Kaiju
         struct hasfield_value : pegtl::seq< pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, pegtl::string< 'h', 'a', 's', 'f', 'i', 'e', 'l', 'd' >, whitespaces_any, identifier, whitespaces_any, pegtl::one< '}' > > {};
         struct access_value : pegtl::seq< whitespaces_any, pegtl::one< '.' >, whitespaces_any, value > {};
         struct field : pegtl::seq< identifier, whitespaces_any, pegtl::one< ':' >, whitespaces_any, identifier > {};
-        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call/*, Operator::binary_operation, Operator::unary_operation*/, library_call, typeof_value, hasmethod_value, hasfield_value, false_value, true_value, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
+        struct value : pegtl::seq< pegtl::sor< object_create, Class::Method::call, Operator::binary_operation, Operator::unary_operation, library_call, typeof_value, hasmethod_value, hasfield_value, false_value, true_value, number, string, null_value, field, identifier >, pegtl::opt< access_value > > {};
         namespace Variable
         {
             struct prefix : pegtl::string< 'v', 'a', 'r' > {};
@@ -158,7 +158,7 @@ namespace Kaiju
             struct conditional_greater : pegtl::one< '>' > {};
             struct conditional_less_or_equal : pegtl::string< '<', '=' > {};
             struct conditional_greater_or_equal : pegtl::string< '>', '=' > {};
-            struct binary_operator : pegtl::sor< add, subtract, multiply, divide, logical_and, logical_or, bitwise_and, bitwise_or, bitwise_xor, bitwise_lshift, bitwise_rshift, conditional_equal, conditional_not_equal, conditional_less, conditional_greater, conditional_less_or_equal, conditional_greater_or_equal > {};
+            struct binary_operator : pegtl::sor< add, subtract, multiply, divide, logical_and, logical_or, bitwise_and, bitwise_or, bitwise_xor, bitwise_lshift, bitwise_rshift, conditional_equal, conditional_not_equal, conditional_less_or_equal, conditional_greater_or_equal, conditional_less, conditional_greater > {};
             struct binary_operation : pegtl::seq< pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, binary_operator, whitespaces_any, value, whitespaces_any, pegtl::one< '}' > > {};
             struct unary_operator : pegtl::sor< increment, decrement, logical_not, bitwise_not > {};
             struct unary_operation : pegtl::seq< unary_operator, whitespaces_any, pegtl::one< '{' >, whitespaces_any, value, whitespaces_any, pegtl::one< '}' > > {};

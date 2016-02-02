@@ -2389,128 +2389,6 @@ namespace Kaiju
             return true;
         }
 
-        Program::BinaryOperation::BinaryOperation( Program* p, ASTNode* n )
-        : Convertible( "binaryOperation", p, n )
-        , valueL( 0 )
-        , valueR( 0 )
-        {
-            if( n->type != "operator.binary_operation" )
-            {
-                appendError( n, "AST node is not type of operator.binary_operation!" );
-                return;
-            }
-            if( n->nodes[ 0 ].type != "value" )
-            {
-                appendError( &n->nodes[ 0 ], "Binary operation first AST node is not a value!" );
-                return;
-            }
-            if( n->nodes[ 1 ].type != "operator.binary_operator" )
-            {
-                appendError( &n->nodes[ 1 ], "Binary operation second AST node is not a binary operator!" );
-                return;
-            }
-            if( n->nodes[ 2 ].type != "value" )
-            {
-                appendError( &n->nodes[ 2 ], "Binary operation third AST node is not a value!" );
-                return;
-            }
-            type = n->nodes[ 1 ].value;
-            Value* v = new Value( p, &n->nodes[ 0 ] );
-            if( !v->isValid )
-            {
-                appendError( v );
-                Delete( v );
-                return;
-            }
-            valueL = v;
-            v = new Value( p, &n->nodes[ 2 ] );
-            if( !v->isValid )
-            {
-                appendError( v );
-                Delete( v );
-                return;
-            }
-            valueR = v;
-            isValid = true;
-        }
-
-        Program::BinaryOperation::~BinaryOperation()
-        {
-            type.clear();
-            Delete( valueL );
-            Delete( valueR );
-        }
-
-        bool Program::BinaryOperation::convertToPST( std::stringstream& output, int level )
-        {
-            std::string lvl( level, '-' );
-            output << "[" << program->nextUIDpst() << "]" << lvl << "(binaryOperation)" << type << std::endl;
-            valueL->convertToPST( output, level + 1 );
-            valueR->convertToPST( output, level + 1 );
-            return true;
-        }
-
-        void Program::BinaryOperation::setProgram( Program* p )
-        {
-            program = p;
-            if( valueL )
-                valueL->setProgram( p );
-            if( valueR )
-                valueR->setProgram( p );
-        }
-
-        Program::UnaryOperation::UnaryOperation( Program* p, ASTNode* n )
-        : Convertible( "unaryOperation", p, n )
-        , value( 0 )
-        {
-            if( n->type != "operator.unary_operation" )
-            {
-                appendError( n, "AST node is not type of operator.binary_operation!" );
-                return;
-            }
-            if( !n->hasType( "operator.unary_operator" ) )
-            {
-                appendError( n, "Unary operation does not have operator!" );
-                return;
-            }
-            if( !n->hasType( "value" ) )
-            {
-                appendError( n, "Unary operation does not have value!" );
-                return;
-            }
-            type = n->findByType( "operator.unary_operator" )->value;
-            Value* v = new Value( p, n->findByType( "value" ) );
-            if( !v->isValid )
-            {
-                appendError( v );
-                Delete( v );
-                return;
-            }
-            value = v;
-            isValid = true;
-        }
-
-        Program::UnaryOperation::~UnaryOperation()
-        {
-            type.clear();
-            Delete( value );
-        }
-
-        bool Program::UnaryOperation::convertToPST( std::stringstream& output, int level )
-        {
-            std::string lvl( level, '-' );
-            output << "[" << program->nextUIDpst() << "]" << lvl << "(unaryOperation)" << type << std::endl;
-            value->convertToPST( output, level + 1 );
-            return true;
-        }
-
-        void Program::UnaryOperation::setProgram( Program* p )
-        {
-            program = p;
-            if( value )
-                value->setProgram( p );
-        }
-
         Program::Method::Method( Program* p, ASTNode* n )
         : Convertible( "method", p, n )
         , isStatic( false )
@@ -2736,6 +2614,13 @@ namespace Kaiju
             }
             p->constantHash( std::hash< std::string >()( id ) );
             p->constantInt( arguments.size() );
+            isValid = true;
+        }
+
+        Program::Method::Call::Call( Program* p, const std::string& i )
+        : Convertible( "methodCall", p, 0 )
+        {
+            id = i;
             isValid = true;
         }
 
@@ -3117,11 +3002,13 @@ namespace Kaiju
             }
             else if( type == T_BINARY_OPERATION )
             {
-                // TODO
+                if( data )
+                    data->convertToISC( output );
             }
             else if( type == T_UNARY_OPERATION )
             {
-                // TODO
+                if( data )
+                    data->convertToISC( output );
             }
             else if( type == T_FALSE )
             {
@@ -3524,6 +3411,195 @@ namespace Kaiju
             program = p;
             if( call )
                 call->setProgram( p );
+        }
+
+        Program::BinaryOperation::BinaryOperation( Program* p, ASTNode* n )
+        : Convertible( "binaryOperation", p, n )
+        , value( 0 )
+        , methodCall( 0 )
+        {
+            if( n->type != "operator.binary_operation" )
+            {
+                appendError( n, "AST node is not type of operator.binary_operation!" );
+                return;
+            }
+            if( n->nodes[ 0 ].type != "value" )
+            {
+                appendError( &n->nodes[ 0 ], "Binary operation first AST node is not a value!" );
+                return;
+            }
+            if( n->nodes[ 1 ].type != "operator.binary_operator" )
+            {
+                appendError( &n->nodes[ 1 ], "Binary operation second AST node is not a binary operator!" );
+                return;
+            }
+            if( n->nodes[ 2 ].type != "value" )
+            {
+                appendError( &n->nodes[ 2 ], "Binary operation third AST node is not a value!" );
+                return;
+            }
+            std::string type = n->nodes[ 1 ].value;
+            Value* v = new Value( p, &n->nodes[ 0 ] );
+            if( !v->isValid )
+            {
+                appendError( v );
+                Delete( v );
+                return;
+            }
+            value = v;
+            v = new Value( p, &n->nodes[ 2 ] );
+            if( !v->isValid )
+            {
+                appendError( v );
+                Delete( v );
+                return;
+            }
+            std::string id = getOperatorMethodId( type );
+            if( id.empty() )
+            {
+                appendError( n, "Unexpected operator found!" );
+                return;
+            }
+            methodCall = new Method::Call( p, id );
+            methodCall->arguments.push_back( v );
+            isValid = true;
+        }
+
+        Program::BinaryOperation::~BinaryOperation()
+        {
+            Delete( value );
+            Delete( methodCall );
+        }
+
+        bool Program::BinaryOperation::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(binaryOperation)" << methodCall->id << std::endl;
+            value->convertToPST( output, level + 1 );
+            methodCall->convertToPST( output, level + 1 );
+            return true;
+        }
+
+        bool Program::BinaryOperation::convertToISC( std::stringstream& output )
+        {
+            if( value && methodCall )
+            {
+                value->convertToISC( output );
+                methodCall->convertToISC( output );
+            }
+            return true;
+        }
+
+        void Program::BinaryOperation::setProgram( Program* p )
+        {
+            program = p;
+            if( value )
+                value->setProgram( p );
+            if( methodCall )
+                methodCall->setProgram( p );
+        }
+
+        std::string Program::BinaryOperation::getOperatorMethodId( const std::string& type )
+        {
+            if( type == "+" ) return "Add";
+            else if( type == "-" ) return "Sub";
+            else if( type == "*" ) return "Mul";
+            else if( type == "/" ) return "Div";
+            else if( type == "&&" ) return "And";
+            else if( type == "||" ) return "Or";
+            else if( type == "&" ) return "BitAnd";
+            else if( type == "|" ) return "BitOr";
+            else if( type == "^" ) return "BitXor";
+            else if( type == "<<" ) return "BitShiftL";
+            else if( type == ">>" ) return "BitShiftR";
+            else if( type == "==" ) return "EqualTo";
+            else if( type == "!=" ) return "NotEqualTo";
+            else if( type == "<" ) return "LessThan";
+            else if( type == ">" ) return "GreaterThan";
+            else if( type == "<=" ) return "LessThanOrEqualTo";
+            else if( type == ">=" ) return "GreaterThanOrEqualTo";
+            else return "";
+        }
+
+        Program::UnaryOperation::UnaryOperation( Program* p, ASTNode* n )
+        : Convertible( "unaryOperation", p, n )
+        , value( 0 )
+        {
+            if( n->type != "operator.unary_operation" )
+            {
+                appendError( n, "AST node is not type of operator.binary_operation!" );
+                return;
+            }
+            if( !n->hasType( "operator.unary_operator" ) )
+            {
+                appendError( n, "Unary operation does not have operator!" );
+                return;
+            }
+            if( !n->hasType( "value" ) )
+            {
+                appendError( n, "Unary operation does not have value!" );
+                return;
+            }
+            std::string type = n->findByType( "operator.unary_operator" )->value;
+            Value* v = new Value( p, n->findByType( "value" ) );
+            if( !v->isValid )
+            {
+                appendError( v );
+                Delete( v );
+                return;
+            }
+            value = v;
+            std::string id = getOperatorMethodId( type );
+            if( id.empty() )
+            {
+                appendError( n, "Unexpected operator found!" );
+                return;
+            }
+            methodCall = new Method::Call( p, id );
+            isValid = true;
+        }
+
+        Program::UnaryOperation::~UnaryOperation()
+        {
+            Delete( value );
+            Delete( methodCall );
+        }
+
+        bool Program::UnaryOperation::convertToPST( std::stringstream& output, int level )
+        {
+            std::string lvl( level, '-' );
+            output << "[" << program->nextUIDpst() << "]" << lvl << "(unaryOperation)" << methodCall->id << std::endl;
+            value->convertToPST( output, level + 1 );
+            methodCall->convertToISC( output, level + 1 );
+            return true;
+        }
+
+        bool Program::UnaryOperation::convertToISC( std::stringstream& output )
+        {
+            if( value && methodCall )
+            {
+                value->convertToISC( output );
+                methodCall->convertToISC( output );
+            }
+            return true;
+        }
+
+        void Program::UnaryOperation::setProgram( Program* p )
+        {
+            program = p;
+            if( value )
+                value->setProgram( p );
+            if( methodCall )
+                methodCall->setProgram( p );
+        }
+
+        std::string Program::UnaryOperation::getOperatorMethodId( const std::string& type )
+        {
+            if( type == "++" ) return "Increment";
+            else if( type == "--" ) return "Decrement";
+            else if( type == "!" ) return "Not";
+            else if( type == "~" ) return "BitNot";
+            else return "";
         }
 
         Program::Class::Class( Program* p, ASTNode* n )

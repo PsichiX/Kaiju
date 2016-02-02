@@ -254,35 +254,6 @@ namespace Kaiju
                 virtual void setProgram( Program* p ) { program = p; };
             };
 
-            class BinaryOperation : public Convertible
-            {
-            public:
-                BinaryOperation( Program* p, ASTNode* n );
-                virtual ~BinaryOperation();
-
-                bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
-                virtual void setProgram( Program* p );
-
-                std::string type;
-                Value* valueL;
-                Value* valueR;
-            };
-
-            class UnaryOperation : public Convertible
-            {
-            public:
-                UnaryOperation( Program* p, ASTNode* n );
-                virtual ~UnaryOperation();
-
-                bool convertToPST( std::stringstream& output, int level = 0 );
-                bool convertToISC( std::stringstream& output ) { return false; };
-                virtual void setProgram( Program* p );
-
-                std::string type;
-                Value* value;
-            };
-
             class Method : public Convertible
             {
             public:
@@ -305,6 +276,7 @@ namespace Kaiju
                 {
                 public:
                     Call( Program* p, ASTNode* n );
+                    Call( Program* p, const std::string& i );
                     virtual ~Call();
 
                     bool convertToPST( std::stringstream& output, int level = 0 );
@@ -411,6 +383,40 @@ namespace Kaiju
                 virtual void setProgram( Program* p );
 
                 Method::Call* call;
+            };
+
+            class BinaryOperation : public Convertible
+            {
+            public:
+                BinaryOperation( Program* p, ASTNode* n );
+                virtual ~BinaryOperation();
+
+                bool convertToPST( std::stringstream& output, int level = 0 );
+                bool convertToISC( std::stringstream& output );
+                virtual void setProgram( Program* p );
+
+                Value* value;
+                Method::Call* methodCall;
+
+            private:
+                std::string getOperatorMethodId( const std::string& type );
+            };
+
+            class UnaryOperation : public Convertible
+            {
+            public:
+                UnaryOperation( Program* p, ASTNode* n );
+                virtual ~UnaryOperation();
+
+                bool convertToPST( std::stringstream& output, int level = 0 );
+                bool convertToISC( std::stringstream& output );
+                virtual void setProgram( Program* p );
+
+                Value* value;
+                Method::Call* methodCall;
+
+            private:
+                std::string getOperatorMethodId( const std::string& type );
             };
 
             class Class : public Convertible

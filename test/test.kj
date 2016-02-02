@@ -16,7 +16,7 @@ class Program
 		foreach(a in arguments)
 			Program:Print(a, String:newLine);
 
-		if(arguments.Count().GreaterThan(2))
+		if({arguments.Count() > 2})
 		{
 			Program:a = arguments.Get(1).ToInt();
 			Program:b = arguments.Get(2).ToInt();
@@ -24,10 +24,10 @@ class Program
 
 		Program:Print(String:newLine);
 		
-		var c = Program:Add(Program:a, Program:b);
+		var c = {Program:a + Program:b};
 		Program:Print("a + b = ", c, String:newLine);
 
-		var p = new Person("john", c.Add(20));
+		var p = new Person("john", {c + 20});
 		Program:Print(p.name, " age is ", p.age, String:newLine);
 		var tmp = p.age;
 
@@ -35,24 +35,24 @@ class Program
 		
 		while(true)
 		{
-			if(tmp.LessThanOrEqualTo(10))
+			if({tmp <= 10})
 				break;
-			tmp = tmp.Sub(1);
-			if(tmp.LessThan(15))
+			tmp = {tmp - 1};
+			if({tmp < 15})
 				continue;
 			Program:Print("while ", tmp, " > 10", String:newLine);
 		}
 
 		Program:Print(String:newLine);
 		
-		for(var i = 0; i.LessThan(tmp); i.Add(1))
+		for(var i = 0; {i < tmp}; {i + 1})
 			Program:Print("for i = ", i, String:newLine);
 
 		Program:Print(String:newLine);
 		
 		if(false)
 			Program:Print("if false", String:newLine);
-		else if(tmp.EqualTo(10))
+		else if({tmp == 10})
 			Program:Print("else if ", tmp, " = 10", String:newLine);
 		else
 			Program:Print("else", String:newLine);
@@ -93,13 +93,6 @@ class Program
 		Program:Print("has size field? ", to, String:newLine);
 
 		return 42;
-	}
-
-	static Add(a, b)
-	{
-		return a.Add(b);
-		// near future:
-		//return {a + b};
 	}
 
 	static Print(...)
