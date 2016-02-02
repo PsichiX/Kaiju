@@ -33,6 +33,7 @@ namespace XeCore
             void                            pushFragment( unsigned int begin, unsigned int end, unsigned int startAddress );
             void                            stop();
             virtual void                    run();
+            bool                            runWithin( unsigned int startAddress );
             virtual void                    onComplete();
             void                            waitForChildren();
             FORCEINLINE bool                isWaiting() { SYNCHRONIZED_OBJECT( m_childrenSync ); return !m_children.empty(); };

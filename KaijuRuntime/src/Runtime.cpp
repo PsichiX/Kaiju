@@ -5,6 +5,7 @@
 #include "../include_private/LibraryInterception.h"
 #include "../include_private/StringInterception.h"
 #include <XeCore/Intuicio/CompilerVM.h>
+#include <XeCore/Intuicio/ContextVM.h>
 #include <XeCore/Intuicio/IntuicioVM.h>
 #include <XeCore/Intuicio/ProgramVM.h>
 #include <XeCore/Intuicio/PrecompilerVM.h>
@@ -278,6 +279,21 @@ namespace Kaiju
         return ((XeCore::Intuicio::ContextVM*)m_context)->deleteManagedObject( ptr );
     }
 
+    bool Runtime::finalizeManagedObject( int64_t caller, int64_t ptr )
+    {
+        if( !m_context || !caller )
+            return false;
+        XeCore::Intuicio::ContextVM* cntx = (XeCore::Intuicio::ContextVM*)m_context;
+        XeCore::Intuicio::ParallelThreadVM* pt = (XeCore::Intuicio::ParallelThreadVM*)caller;
+        if( cntx->getManagedObjectRefCount( ptr ) == 1 )
+        {
+            uint32_t addr = cntx->getManagedObjectFinalizerAddress( ptr );
+            return addr ? pt->runWithin( addr ) : true;
+        }
+        else
+            return true;
+    }
+
     bool Runtime::refManagedObject( int64_t ptrDst, int64_t ptrSrc )
     {
         if( !m_context )
@@ -299,14 +315,41 @@ namespace Kaiju
         return ((XeCore::Intuicio::ContextVM*)m_context)->getManagedObjectDataRaw( ptr );
     }
 
-    bool Runtime::newManagedObjectRaw( int64_t ptr, uint32_t size, const std::string& classId )
+    bool Runtime::newManagedObjectRaw( int64_t caller, int64_t ptr, uint32_t size, const std::string& classId, int argsCount )
     {
-        if( !m_context )
+        if( !caller || !m_context )
             return false;
-        VM::___ClassMetaInfo* cmi = (VM::___ClassMetaInfo*)getTypeByName( classId );
+        XeCore::Intuicio::ContextVM* cntx = (XeCore::Intuicio::ContextVM*)m_context;
+        XeCore::Intuicio::ParallelThreadVM* pt = (XeCore::Intuicio::ParallelThreadVM*)caller;
+        VM::___ClassMetaInfo* cmi = getType( classId );
         if( !cmi )
             return false;
-        return ((XeCore::Intuicio::ContextVM*)m_context)->newManagedObjectRaw( ptr, size );
+        if( !cntx->newManagedObjectRaw( ptr, size, cmi->finalizerAddress ) )
+            return false;
+        Atom::___Atom* data = (Atom::___Atom*)cntx->getManagedObjectDataRaw( ptr );
+        data->___classMetaInfo = (int64_t)cmi;
+        if( !cntx->stackPush( pt, &ptr, sizeof( ptr ) ) )
+            return false;
+        if( !pt->runWithin( cmi->creatorAddress ) )
+            return false;
+        if( !cntx->stackPush( pt, &ptr, sizeof( ptr ) ) )
+            return false;
+        VM::___MethodMetaInfo* mmi = findManagedObjectMethod( cmi, "Constructor" );
+        if( !mmi )
+            return false;
+        if( argsCount < 0 )
+            cntx->stackPush( pt, &mmi->argsCount, sizeof( mmi->argsCount ) );
+        else
+            cntx->stackPush( pt, &argsCount, sizeof( argsCount ) );
+        if( !pt->runWithin( mmi->address ) )
+            return false;
+        if( !cntx->stackPop( pt, &ptr, sizeof( ptr ) ) )
+            return false;
+        if( !finalizeManagedObject( caller, ptr ) )
+            return false;
+        if( !deleteManagedObject( ptr ) )
+            return false;
+        return true;
     }
 
     uint32_t Runtime::getManagedObjectRefCount( int64_t ptr )
@@ -316,14 +359,7 @@ namespace Kaiju
         return ((XeCore::Intuicio::ContextVM*)m_context)->getManagedObjectRefCount( ptr );
     }
 
-    uint32_t Runtime::getManagedObjectFinalizerAddress( int64_t ptr )
-    {
-        if( !m_context )
-            return 0;
-        return ((XeCore::Intuicio::ContextVM*)m_context)->getManagedObjectFinalizerAddress( ptr );
-    }
-
-    void* Runtime::getTypeByNameRaw( const std::string& name )
+    VM::___ClassMetaInfo* Runtime::getType( const std::string& name )
     {
         for( auto t : m_types )
         {
@@ -334,15 +370,61 @@ namespace Kaiju
         return 0;
     }
 
-    void* Runtime::getTypeByUIDRaw( int64_t uid )
+    VM::___FieldMetaInfo* Runtime::findManagedObjectField( VM::___ClassMetaInfo* type, const std::string& name )
     {
-        for( auto t : m_types )
-        {
-            VM::___ClassMetaInfo* cmi = (VM::___ClassMetaInfo*)t;
-            if( cmi->uid == uid )
-                return cmi;
-        }
+        if( !type )
+            return 0;
+        VM::___FieldMetaInfo* fmi = (VM::___FieldMetaInfo*)type->fields;
+        for( int i = 0; i < type->fieldsCount; ++i )
+            if( std::strcmp( (const char*)fmi[ i ].name, name.c_str() ) == 0 )
+                return &fmi[ i ];
         return 0;
+    }
+
+    VM::___FieldMetaInfo* Runtime::findManagedObjectField( int64_t ptr, const std::string& name )
+    {
+        if( !ptr )
+            return 0;
+        VM::___ClassMetaInfo* cmi = (VM::___ClassMetaInfo*)((Atom::___Atom*)ptr)->___classMetaInfo;
+        return findManagedObjectField( cmi, name );
+    }
+
+    VM::___MethodMetaInfo* Runtime::findManagedObjectMethod( VM::___ClassMetaInfo* type, const std::string& name )
+    {
+        if( !type )
+            return 0;
+        VM::___MethodMetaInfo* mmi = (VM::___MethodMetaInfo*)type->methods;
+        for( int i = 0; i < type->methodsCount; ++i )
+            if( std::strcmp( (const char*)mmi[ i ].name, name.c_str() ) == 0 )
+                return &mmi[ i ];
+        return 0;
+    }
+
+    VM::___MethodMetaInfo* Runtime::findManagedObjectMethod( int64_t ptr, const std::string& name )
+    {
+        if( !ptr )
+            return 0;
+        VM::___ClassMetaInfo* cmi = (VM::___ClassMetaInfo*)((Atom::___Atom*)ptr)->___classMetaInfo;
+        return findManagedObjectMethod( cmi, name );
+    }
+
+    bool Runtime::callManagedObjectMethod( int64_t caller, int64_t thisPtr, VM::___MethodMetaInfo* method, int argsCount )
+    {
+        if( !caller || !method )
+            return false;
+        XeCore::Intuicio::ContextVM* cntx = (XeCore::Intuicio::ContextVM*)m_context;
+        XeCore::Intuicio::ParallelThreadVM* pt = (XeCore::Intuicio::ParallelThreadVM*)caller;
+        if( !thisPtr )
+            thisPtr = cntx->createManagedObject();
+        if( !thisPtr )
+            return false;
+        if( !cntx->stackPush( pt, &thisPtr, sizeof( thisPtr ) ) )
+            return false;
+        if( argsCount < 0 )
+            cntx->stackPush( pt, &method->argsCount, sizeof( method->argsCount ) );
+        else
+            cntx->stackPush( pt, &argsCount, sizeof( argsCount ) );
+        return pt->runWithin( method->address );
     }
 
     void Runtime::registerType( int64_t ptr )

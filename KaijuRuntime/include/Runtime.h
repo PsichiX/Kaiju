@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "RuntimeTypes.h"
 
 namespace Kaiju
 {
@@ -23,22 +24,26 @@ namespace Kaiju
         inline bool stackPop( int64_t caller, T* dst ) { return stackPop( caller, dst, sizeof( T ) ); };
         int64_t createManagedObject();
         bool deleteManagedObject( int64_t ptr );
+        bool finalizeManagedObject( int64_t caller, int64_t ptr );
         bool refManagedObject( int64_t ptrDst, int64_t ptrSrc );
         bool unrefManagedObject( int64_t ptr );
         void* getManagedObjectDataRaw( int64_t ptr );
         template< typename T >
         inline T* getManagedObjectData( int64_t ptr ) { return (T*)getManagedObjectDataRaw( ptr ); };
-        bool newManagedObjectRaw( int64_t ptr, uint32_t size, const std::string& classId );
+        bool newManagedObjectRaw( int64_t caller, int64_t ptr, uint32_t size, const std::string& classId, int argsCount = -1 );
         template< typename T >
-        inline bool newManagedObject( int64_t ptr, uint32_t count, const std::string& classId ) { return newManagedObjectRaw( ptr, count * sizeof( T ), classId ); };
+        inline bool newManagedObject( int64_t caller, int64_t ptr, const std::string& classId, int argsCount = -1 ) { return newManagedObjectRaw( caller, ptr, sizeof( T ), classId, argsCount ); };
         uint32_t getManagedObjectRefCount( int64_t ptr );
-        uint32_t getManagedObjectFinalizerAddress( int64_t ptr );
-        void* getTypeByNameRaw( const std::string& name );
-        template< typename T >
-        inline T* getTypeByName( const std::string& name ) { return (T*)getTypeByNameRaw( name ); };
-        void* getTypeByUIDRaw( int64_t uid );
-        template< typename T >
-        inline T* getTypeByUID( int64_t uid ) { return (T*)getTypeByUIDRaw( uid ); };
+        VM::___ClassMetaInfo* getType( const std::string& name );
+        VM::___FieldMetaInfo* findManagedObjectField( VM::___ClassMetaInfo* type, const std::string& name );
+        inline VM::___FieldMetaInfo* findManagedObjectField( const std::string& type, const std::string& name ) { return findManagedObjectField( getType( type ), name ); };
+        VM::___FieldMetaInfo* findManagedObjectField( int64_t ptr, const std::string& name );
+        VM::___MethodMetaInfo* findManagedObjectMethod( VM::___ClassMetaInfo* type, const std::string& name );
+        inline VM::___MethodMetaInfo* findManagedObjectMethod( const std::string& type, const std::string& name ) { return findManagedObjectMethod( getType( type ), name ); };
+        VM::___MethodMetaInfo* findManagedObjectMethod( int64_t ptr, const std::string& name );
+        bool callManagedObjectMethod( int64_t caller, int64_t thisPtr, VM::___MethodMetaInfo* method, int argsCount = -1 );
+        inline bool callManagedObjectMethod( int64_t caller, int64_t thisPtr, VM::___ClassMetaInfo* type, const std::string& name, int argsCount = -1 ) { return callManagedObjectMethod( caller, thisPtr, findManagedObjectMethod( type, name ), argsCount ); };
+        inline bool callManagedObjectMethod( int64_t caller, int64_t thisPtr, const std::string& type, const std::string& name, int argsCount = -1 ) { return callManagedObjectMethod( caller, thisPtr, findManagedObjectMethod( type, name ), argsCount ); };
         void registerType( int64_t ptr );
 
     private:

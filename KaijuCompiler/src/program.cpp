@@ -252,6 +252,7 @@ namespace Kaiju
             output << "!field address uid 1" << std::endl;
             output << "!field int static 1" << std::endl;
             output << "!field int address 1" << std::endl;
+            output << "!field int argsCount 1" << std::endl;
             output << "!field address owner 1" << std::endl;
             output << "!struct-end" << std::endl;
             output << "!struct-def ___ClassMetaInfo" << std::endl;
@@ -263,6 +264,8 @@ namespace Kaiju
             output << "!field int methodsCount 1" << std::endl;
             output << "!field address fields 1" << std::endl;
             output << "!field address methods 1" << std::endl;
+            output << "!field int creatorAddress 1" << std::endl;
+            output << "!field int finalizerAddress 1" << std::endl;
             output << "!struct-end" << std::endl;
             output << "!struct-def ___Atom" << std::endl;
             output << "!field address ___classMetaInfo 1" << std::endl;
@@ -3494,6 +3497,7 @@ namespace Kaiju
                 output << "!data int ___METHOD_NAMELEN_" << kv.first << " " << (kv.first.length() + 1) << std::endl;
                 output << "!data address ___METHOD_UID_" << kv.first << " " << (int64_t)std::hash< std::string >()( kv.first ) << std::endl;
                 output << "!data int ___METHOD_STATIC_" << kv.first << " " << (int)kv.second->isStatic << std::endl;
+                output << "!data int ___METHOD_ARGSCOUNT_" << kv.first << " " << (int)kv.second->arguments.size() << std::endl;
             }
             std::vector< std::string > sfl;
             getFieldsList( sfl, true );
@@ -3510,6 +3514,8 @@ namespace Kaiju
             output << "mova :$" << id << "/type->___ClassMetaInfo.uid $" << id << "/___CLASS_UID" << std::endl;
             output << "movi :$" << id << "/type->___ClassMetaInfo.fieldsCount $" << id << "/___CLASS_FIELDS_COUNT" << std::endl;
             output << "movi :$" << id << "/type->___ClassMetaInfo.methodsCount $" << id << "/___CLASS_METHODS_COUNT" << std::endl;
+            output << "jadr :$" << id << "/type->___ClassMetaInfo.creatorAddress @" << id << "/___Creator" << std::endl;
+            output << "jadr :$" << id << "/type->___ClassMetaInfo.finalizerAddress @" << id << "/___Finalizer" << std::endl;
             Class* inh = program->findClass( inheritance );
             if( inh )
                 output << "mova :$" << id << "/type->___ClassMetaInfo.inheritanceMetaInfo $" << inh->id << "/type" << std::endl;
@@ -3538,6 +3544,7 @@ namespace Kaiju
                 output << "movb :$___ptr->___MethodMetaInfo.name $" << id << "/___METHOD_NAME_" << kv.first <<" 0" << std::endl;
                 output << "mova :$___ptr->___MethodMetaInfo.uid $" << id << "/___METHOD_UID_" << kv.first << std::endl;
                 output << "movi :$___ptr->___MethodMetaInfo.static $" << id << "/___METHOD_STATIC_" << kv.first << std::endl;
+                output << "movi :$___ptr->___MethodMetaInfo.argsCount $" << id << "/___METHOD_ARGSCOUNT_" << kv.first << std::endl;
                 output << "jadr :$___ptr->___MethodMetaInfo.address @" << id << "/" << kv.first << std::endl;
                 output << "mova :$___ptr->___MethodMetaInfo.owner $" << id << "/type" << std::endl;
                 output << "sadr $___ptr ___MethodMetaInfo 1" << std::endl;
