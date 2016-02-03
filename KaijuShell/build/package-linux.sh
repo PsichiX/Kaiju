@@ -2,7 +2,6 @@
 
 FILEPATH="kaiju-shell-1.0-linux"
 
-
 echo "Prepare package files..."
 
 echo "- package binaries..."
@@ -22,6 +21,8 @@ cp ../../test/Float.kj ${FILEPATH}/std/
 cp ../../test/String.kj ${FILEPATH}/std/
 cp ../../test/Array.kj ${FILEPATH}/std/
 cp ../../test/Pointer.kj ${FILEPATH}/std/
+cp ../../test/Buffer.kj ${FILEPATH}/std/
+cp ../../test/OS.kj ${FILEPATH}/std/
 
 echo "Make package archive..."
 mkdir output

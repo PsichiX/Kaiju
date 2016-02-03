@@ -177,6 +177,7 @@ namespace Kaiju
             output << "!external ___APP_ARGS_CSTR_PTR" << std::endl;
             output << "!external ___APP_ARGS_SIZE_PTR" << std::endl;
             output << "!external ___APP_EXIT_CODE" << std::endl;
+            output << "!external ___PLATFORM_TYPE" << std::endl;
             output << "!data int ___ZERO 0" << std::endl;
             output << "!data float ___ZEROF 0.0" << std::endl;
             output << "!data address ___NULL 0" << std::endl;

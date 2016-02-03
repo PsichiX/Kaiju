@@ -13,7 +13,7 @@ sed -i '/\#KaijuShell\#/d' ~/.bashrc
 echo "Install Kaiju Shell binaries..."
 mkdir /usr/lib/kaiju/
 cp -r ./bin /usr/lib/kaiju/bin
-cp -r ./lib /usr/lib/kaiju/lib
+# cp -r ./lib /usr/lib/kaiju/lib
 cp -r ./std /usr/lib/kaiju/std
 chmod +x /usr/lib/kaiju/bin/kaiju
 chmod +x /usr/lib/kaiju/bin/setupenv.sh

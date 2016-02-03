@@ -1,4 +1,4 @@
-#use("Object.kj");
+#use("Atom.kj");
 
 class Int
 {
@@ -60,6 +60,163 @@ class Int
 		#inject("movi regi:0 :*$this->Int/___Data.___data");
 		#inject("movi regi:1 :*$v->Int/___Data.___data");
 		#inject("divi 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	Inc()
+	{
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("inci 0 0");
+		#inject("movi :*$result->Int/___Data.___data regi:0");
+		return result;
+	}
+
+	Dec()
+	{
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("deci 0 0");
+		#inject("movi :*$result->Int/___Data.___data regi:0");
+		return result;
+	}
+
+	Min(v)
+	{
+		#ensureType(v, Int);
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("mini 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	Max(v)
+	{
+		#ensureType(v, Int);
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("maxi 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	Sqrt()
+	{
+		var result = 0;
+		#inject("movi regf:0 :*$this->Int/___Data.___data");
+		#inject("sqti 0 0");
+		#inject("movi :*$result->Int/___Data.___data regi:0");
+		return result;
+	}
+
+	Pow(v)
+	{
+		#ensureType(v, Int);
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("powi 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	Abs()
+	{
+		var result = 0;
+		#inject("movi regf:0 :*$this->Int/___Data.___data");
+		#inject("absi 0 0");
+		#inject("movi :*$result->Int/___Data.___data regi:0");
+		return result;
+	}
+
+	Mod(v)
+	{
+		#ensureType(v, Int);
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("modi 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	Clamp(min, max)
+	{
+		#ensureType(min, Int);
+		#ensureType(max, Int);
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$min->Int/___Data.___data");
+		#inject("movi regi:2 :*$max->Int/___Data.___data");
+		#inject("clpi 3 0 1 2");
+		#inject("movi :*$result->Int/___Data.___data regi:3");
+		return result;
+	}
+
+	BitNot()
+	{
+		var result = 0;
+		#inject("movi regf:0 :*$this->Int/___Data.___data");
+		#inject("not 0 0");
+		#inject("movi :*$result->Int/___Data.___data regi:0");
+		return result;
+	}
+
+	BitAnd(v)
+	{
+		#ensureType(v, Int);
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("and 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	BitOr(v)
+	{
+		#ensureType(v, Int);
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("or 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	BitXor(v)
+	{
+		#ensureType(v, Int);
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("xor 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	BitShiftL(v)
+	{
+		#ensureType(v, Int);
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("bshl 2 0 1");
+		#inject("movi :*$result->Int/___Data.___data regi:2");
+		return result;
+	}
+
+	BitShiftR(v)
+	{
+		#ensureType(v, Int);
+		var result = 0;
+		#inject("movi regi:0 :*$this->Int/___Data.___data");
+		#inject("movi regi:1 :*$v->Int/___Data.___data");
+		#inject("bshr 2 0 1");
 		#inject("movi :*$result->Int/___Data.___data regi:2");
 		return result;
 	}

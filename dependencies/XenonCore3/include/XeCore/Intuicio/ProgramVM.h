@@ -260,6 +260,8 @@ namespace XeCore
                 OP_STI,
                 OP_ITB,
                 OP_BTI,
+                OP_ITC,
+                OP_CTI,
                 OP_ITA
             };
 

@@ -4,6 +4,7 @@
 
 #use("Person.kj");
 #use("Atom.kj");
+#use("OS.kj");
 
 class Program
 {
@@ -12,6 +13,16 @@ class Program
 
 	static Main(...)
 	{
+		var startTime = OS:TimeRunningMS();
+
+		var platform = OS:PlatformType();
+		if({platform == OS:platformLinux})
+			Program:Print("Script is running on Linux platform!", String:newLine);
+		else if({platform == OS:platformWindows})
+			Program:Print("Script is running on Windows platform!", String:newLine);
+		else
+			Program:Print("Script is running on unknown platform!", String:newLine);
+
 		Program:Print("Program arguments:", String:newLine);
 		foreach(a in arguments)
 			Program:Print(a, String:newLine);
@@ -91,6 +102,11 @@ class Program
 
 		to = {t hasfield size};
 		Program:Print("has size field? ", to, String:newLine);
+
+		Program:Print(String:newLine);
+
+		var endTime = OS:TimeRunningMS();
+		Program:Print("Program running time: ", {endTime - startTime}, "ms", String:newLine);
 
 		return 42;
 	}

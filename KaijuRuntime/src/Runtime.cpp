@@ -206,11 +206,19 @@ namespace Kaiju
                     for( std::vector< std::string >::const_reverse_iterator it = args.crbegin(); it != args.crend(); ++it, ++i )
                         argsSizes[ i ] = (int32_t)it->length();
                 }
+                int32_t platformType = 0;
+                #ifdef BUILD_LINUX
+                platformType = 1;
+                #endif
+                #ifdef BUILD_WIN
+                platformType = 2;
+                #endif
                 std::map< XeCore::Common::String, void* > externals;
                 externals[ "___APP_ARGS_COUNT" ] = &argsCount;
                 externals[ "___APP_ARGS_CSTR_PTR" ] = &argsTable;
                 externals[ "___APP_ARGS_SIZE_PTR" ] = &argsTableSizes;
                 externals[ "___APP_EXIT_CODE" ] = &code;
+                externals[ "___PLATFORM_TYPE" ] = &platformType;
                 cntx->bindExternals( externals );
                 m_context = cntx;
                 cntx->runProgram( true );

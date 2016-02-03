@@ -1,4 +1,4 @@
-#use("Object.kj");
+#use("Atom.kj");
 
 class Float
 {
@@ -61,6 +61,184 @@ class Float
 		#inject("movf regf:1 :*$v->Float/___Data.___data");
 		#inject("divf 2 0 1");
 		#inject("movf :*$result->Float/___Data.___data regf:2");
+		return result;
+	}
+
+	Inc()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("incf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Dec()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("decf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Min(v)
+	{
+		#ensureType(v, Float);
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("movf regf:1 :*$v->Float/___Data.___data");
+		#inject("minf 2 0 1");
+		#inject("movf :*$result->Float/___Data.___data regf:2");
+		return result;
+	}
+
+	Max(v)
+	{
+		#ensureType(v, Float);
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("movf regf:1 :*$v->Float/___Data.___data");
+		#inject("maxf 2 0 1");
+		#inject("movf :*$result->Float/___Data.___data regf:2");
+		return result;
+	}
+
+	Floor()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("flrf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Ceil()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("cilf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Fract()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("frcf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Sqrt()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("sqtf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Pow(v)
+	{
+		#ensureType(v, Float);
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("movf regf:1 :*$v->Float/___Data.___data");
+		#inject("powf 2 0 1");
+		#inject("movf :*$result->Float/___Data.___data regf:2");
+		return result;
+	}
+
+	Log()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("logf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Exp()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("expf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Sin()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("sinf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Cos()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("cosf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Tan()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("tanf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Abs()
+	{
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("absf 0 0");
+		#inject("movf :*$result->Float/___Data.___data regf:0");
+		return result;
+	}
+
+	Mod(v)
+	{
+		#ensureType(v, Float);
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("movf regf:1 :*$v->Float/___Data.___data");
+		#inject("modf 2 0 1");
+		#inject("movf :*$result->Float/___Data.___data regf:2");
+		return result;
+	}
+
+	Clamp(min, max)
+	{
+		#ensureType(min, Float);
+		#ensureType(max, Float);
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("movf regf:1 :*$min->Float/___Data.___data");
+		#inject("movf regf:2 :*$max->Float/___Data.___data");
+		#inject("clpf 3 0 1 2");
+		#inject("movf :*$result->Float/___Data.___data regf:3");
+		return result;
+	}
+
+	Mix(v, a)
+	{
+		#ensureType(v, Float);
+		#ensureType(a, Float);
+		var result = 0.0;
+		#inject("movf regf:0 :*$this->Float/___Data.___data");
+		#inject("movf regf:1 :*$v->Float/___Data.___data");
+		#inject("movf regf:2 :*$a->Float/___Data.___data");
+		#inject("mixf 3 0 1 2");
+		#inject("movf :*$result->Float/___Data.___data regf:3");
 		return result;
 	}
 

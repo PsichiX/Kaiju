@@ -1,0 +1,36 @@
+#use("Atom.kj");
+
+class OS
+{
+	static var platformUnknown = 0;
+	static var platformLinux = 1;
+	static var platformWindows = 2;
+	
+	static PlatformType()
+	{
+		var result = 0;
+		#inject("movi :*$result->Int/___Data.___data ^___PLATFORM_TYPE");
+		return result;
+	}
+
+	static ClockTicks()
+	{
+		var result = 0;
+		#inject("ptck :*$result->Int/___Data.___data");
+		return result;
+	}
+
+	static ClockTicksPerSecond()
+	{
+		var result = 0;
+		#inject("ptps :*$result->Int/___Data.___data");
+		return result;
+	}
+
+	static TimeRunningMS()
+	{
+		var result = 0;
+		#inject("ptms :*$result->Int/___Data.___data");
+		return result;
+	}
+}

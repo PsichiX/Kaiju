@@ -1,0 +1,269 @@
+#use("Atom.kj");
+
+class Buffer
+{
+	#atomField(address, ___data, 1);
+	#atomField(int, ___bytesize, 1);
+
+	Constructor(bytesize)
+	{
+		#ensureType(bytesize, Int);
+		if(bytesize.LessThan(0))
+			bytesize = 0;
+		#inject("movi :*$this->Buffer/___Data.___bytesize :*$bytesize->Int/___Data.___data");
+		#inject("movi regi:0 :*$this->Buffer/___Data.___bytesize");
+		#inject("new :*$this->Buffer/___Data.___data address 0");
+	}
+
+	Destructor()
+	{
+		#inject("movi :*$this->Buffer/___Data.___bytesize $___ZERO");
+		#inject("del :*$this->Buffer/___Data.___data");
+		#inject("mova :*$this->Buffer/___Data.___data $___NULL");
+	}
+
+	Size()
+	{
+		var result = 0;
+		#inject("movi :*$result->Int/___Data.___data :*$this->Buffer/___Data.___bytesize");
+		return result;
+	}
+
+	GetInt8(offset)
+	{
+		#ensureType(offset, Int);
+		offset = offset.Clamp(0, this.Size().Sub(1));
+		var result = 0;
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("cti :*$result->Int/___Data.___data :$___ptr");
+		return result;
+	}
+
+	GetInt16(offset)
+	{
+		#ensureType(offset, Int);
+		offset = offset.Clamp(0, this.Size().Sub(2));
+		var result = 0;
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("sti :*$result->Int/___Data.___data :$___ptr");
+		return result;
+	}
+
+	GetInt32(offset)
+	{
+		#ensureType(offset, Int);
+		offset = offset.Clamp(0, this.Size().Sub(4));
+		var result = 0;
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("movi :*$result->Int/___Data.___data :$___ptr");
+		return result;
+	}
+
+	GetUInt8(offset)
+	{
+		#ensureType(offset, Int);
+		offset = offset.Clamp(0, this.Size().Sub(1));
+		var result = 0;
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("bti :*$result->Int/___Data.___data :$___ptr");
+		return result;
+	}
+
+	GetUInt16(offset)
+	{
+		#ensureType(offset, Int);
+		offset = offset.Clamp(0, this.Size().Sub(2));
+		var result = 0;
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("wti :*$result->Int/___Data.___data :$___ptr");
+		return result;
+	}
+
+	GetUInt32(offset)
+	{
+		#ensureType(offset, Int);
+		offset = offset.Clamp(0, this.Size().Sub(4));
+		var result = 0;
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("dti :*$result->Int/___Data.___data :$___ptr");
+		return result;
+	}
+
+	GetFloat(offset)
+	{
+		#ensureType(offset, Int);
+		offset = offset.Clamp(0, this.Size().Sub(4));
+		var result = 0.0;
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("movf :*$result->Float/___Data.___data :$___ptr");
+		return result;
+	}
+
+	GetPointer(offset)
+	{
+		#ensureType(offset, Int);
+		offset = offset.Clamp(0, this.Size().Sub(8));
+		var result = new Pointer();
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("mova :*$result->Pointer/___Data.___data :$___ptr");
+		return result;
+	}
+
+	GetString(offset, length)
+	{
+		#ensureType(offset, Int);
+		#ensureType(length, Int);
+		length = length.Min(this.Size());
+		offset = offset.Clamp(0, this.Size().Sub(length));
+		var result;
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("pshi :*$length->Int/___Data.___data");
+		#inject("psha :$___ptr");
+		#inject("call @___GET_STRING_FROM_ATOM");
+		#inject("mpop $___ptr");
+		#inject("mref $result $___ptr");
+		#inject("mfin $___ptr");
+		#inject("mdel $___ptr");
+		return result;
+	}
+
+	SetInt8(offset, value)
+	{
+		#ensureType(offset, Int);
+		#ensureType(value, Int);
+		offset = offset.Clamp(0, this.Size().Sub(1));
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("itc :$___ptr :*$value->Int/___Data.___data");
+	}
+
+	SetInt16(offset, value)
+	{
+		#ensureType(offset, Int);
+		#ensureType(value, Int);
+		offset = offset.Clamp(0, this.Size().Sub(2));
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("its :$___ptr :*$value->Int/___Data.___data");
+	}
+
+	SetInt32(offset, value)
+	{
+		#ensureType(offset, Int);
+		#ensureType(value, Int);
+		offset = offset.Clamp(0, this.Size().Sub(4));
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("movi :$___ptr :*$value->Int/___Data.___data");
+	}
+
+	SetUInt8(offset, value)
+	{
+		#ensureType(offset, Int);
+		#ensureType(value, Int);
+		offset = offset.Clamp(0, this.Size().Sub(1));
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("itb :$___ptr :*$value->Int/___Data.___data");
+	}
+
+	SetUInt16(offset, value)
+	{
+		#ensureType(offset, Int);
+		#ensureType(value, Int);
+		offset = offset.Clamp(0, this.Size().Sub(2));
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("itw :$___ptr :*$value->Int/___Data.___data");
+	}
+
+	SetUInt32(offset, value)
+	{
+		#ensureType(offset, Int);
+		#ensureType(value, Int);
+		offset = offset.Clamp(0, this.Size().Sub(4));
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("itd :$___ptr :*$value->Int/___Data.___data");
+	}
+
+	SetFloat(offset, value)
+	{
+		#ensureType(offset, Int);
+		#ensureType(value, Float);
+		offset = offset.Clamp(0, this.Size().Sub(4));
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("movf :$___ptr :*$value->Float/___Data.___data");
+	}
+
+	SetPointer(offset, value)
+	{
+		#ensureType(offset, Int);
+		#ensureType(value, Pointer);
+		offset = offset.Clamp(0, this.Size().Sub(8));
+		#inject("!data address ___ptr 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("mova :$___ptr :*$value->Pointer/___Data.___data");
+	}
+
+	SetString(offset, value, length)
+	{
+		#ensureType(offset, Int);
+		#ensureType(value, String);
+		#ensureType(length, Int);
+		length = length.Min(this.Size());
+		offset = offset.Clamp(0, this.Size().Sub(length));
+		#inject("!data address ___ptr 0");
+		#inject("!data address ___data 0");
+		#inject("movi regi:0 :*$offset->Int/___Data.___data");
+		#inject("movi regi:1 :*$length->Int/___Data.___data");
+		#inject("mova $___ptr :*$this->Buffer/___Data.___data");
+		#inject("sadr $___ptr byte 0");
+		#inject("mova $___data :*$value->String/___Data.___data");
+		#inject("movb :$___ptr :$___data 1");
+	}
+}
