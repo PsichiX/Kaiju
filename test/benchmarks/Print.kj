@@ -1,0 +1,34 @@
+#use("Atom.kj");
+
+class Print
+{
+	static Print(...)
+	{
+		foreach(arg in arguments)
+		{
+			if({arg typeof Int})
+				#inject("dbgi :*$arg->Int/___Data.___data");
+			else if({arg typeof Float})
+				#inject("dbgf :*$arg->Float/___Data.___data");
+			else if({arg typeof String})
+			{
+				#inject("!data address ptr 0");
+				#inject("mova $ptr :*$arg->String/___Data.___data");
+				#inject("dbgb :$ptr");
+			}
+			else if({arg typeof Bool})
+			{
+				#inject("!data bytes ___true 84, 82, 85, 69, 0");
+				#inject("!data bytes ___false 70, 65, 76, 83, 69, 0");
+				#inject("movi regi:0 :*$arg->Bool/___Data.___data");
+				#inject("jifi 0 @___printTrue @___printFalse");
+				#inject("!jump ___printTrue");
+				#inject("dbgb $___true");
+				#inject("goto @___printEnd");
+				#inject("!jump ___printFalse");
+				#inject("dbgb $___false");
+				#inject("!jump ___printEnd");
+			}
+		}
+	}
+}

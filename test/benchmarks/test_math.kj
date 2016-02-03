@@ -1,0 +1,34 @@
+#!/usr/bin/env kaiju
+
+#entry("Test : Main");
+
+#use("Atom.kj");
+#use("OS.kj");
+#use("Print.kj");
+
+class Test
+{
+	static Main(...)
+	{
+		var iterations = 0;
+		if({arguments.Count() > 1})
+			iterations = arguments.Get(1).ToInt();
+		Print:Print("Iterations: ", iterations, String:newLine);
+		var timeStart = OS:TimeRunning();
+
+		var a;
+		var b;
+		var c;
+		var d;
+		for(var i = 0; {i < iterations}; i.Inc())
+		{
+			a = {i + 1};
+			b = {a * 2};
+			c = {b / 3};
+			d = {c - a};
+		}
+
+		var timeEnd = OS:TimeRunning();
+		Print:Print("Test running time: ", {timeEnd - timeStart}, "s", String:newLine);
+	}
+}
