@@ -13,21 +13,7 @@ class OS
 		return result;
 	}
 
-	static ClockTicks()
-	{
-		var result = 0;
-		#inject("ptck :*$result->Int/___Data.___data");
-		return result;
-	}
-
-	static ClockTicksPerSecond()
-	{
-		var result = 0;
-		#inject("ptps :*$result->Int/___Data.___data");
-		return result;
-	}
-
-	static TimeRunningMS()
+	static TimeRunning()
 	{
 		var result = 0;
 		#inject("ptms :*$result->Int/___Data.___data");

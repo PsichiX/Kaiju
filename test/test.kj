@@ -13,7 +13,7 @@ class Program
 
 	static Main(...)
 	{
-		var startTime = OS:TimeRunningMS();
+		var startTime = OS:TimeRunning();
 
 		var platform = OS:PlatformType();
 		if({platform == OS:platformLinux})
@@ -105,8 +105,8 @@ class Program
 
 		Program:Print(String:newLine);
 
-		var endTime = OS:TimeRunningMS();
-		Program:Print("Program running time: ", {endTime - startTime}, "ms", String:newLine);
+		var endTime = OS:TimeRunning();
+		Program:Print("Program running time: ", {endTime - startTime}, "s", String:newLine);
 
 		return 42;
 	}
